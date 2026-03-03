@@ -467,7 +467,7 @@ def _parse_jsonb(value):
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_market_payload(lat: float, lon: float, raio: int, data_ref_sql: str | None):
     cfg = _db_env_config()
-    required = ["dbname", "host", "password", "user", "schema"]
+    required = ["dbname", "host", "password", "user"]
     missing = [key for key in required if not cfg.get(key)]
     if missing:
         raise ValueError(
@@ -508,7 +508,7 @@ datas_disponiveis AS (
         bl_lancamento,
         data_tabela,
         DATE_TRUNC('month', data_tabela) AS mes_referencia
-    FROM {schema}.api_mercado
+    FROM sidebar.api_mercado
 ),
 meses_alvo AS (
     SELECT
@@ -518,7 +518,7 @@ meses_alvo AS (
         DATE_TRUNC('month', COALESCE((SELECT data_ref_sql FROM params), MAX(b.data_tabela))) - INTERVAL '5 months'  AS mes_menos_5,
         DATE_TRUNC('month', COALESCE((SELECT data_ref_sql FROM params), MAX(b.data_tabela))) - INTERVAL '8 months'  AS mes_menos_8,
         DATE_TRUNC('month', COALESCE((SELECT data_ref_sql FROM params), MAX(b.data_tabela))) - INTERVAL '11 months' AS mes_menos_11
-    FROM {schema}.api_mercado b
+    FROM sidebar.api_mercado b
     GROUP BY b.bl_lancamento
 ),
 liquidez_anuncios AS (
@@ -533,7 +533,7 @@ liquidez_anuncios AS (
             )
         ) AS tipo_imovel,
         EXTRACT(EPOCH FROM (MAX(b.data_tabela) - MIN(b.data_tabela))) / 86400 AS dias_no_mercado
-    FROM {schema}.api_mercado b
+    FROM sidebar.api_mercado b
     INNER JOIN meses_alvo m
         ON  b.bl_lancamento = m.bl_lancamento
         AND b.data_tabela BETWEEN m.mes_menos_11
@@ -594,7 +594,7 @@ base AS (
         b.faixa_area,
         b.area,
         b.valor / NULLIF(b.area, 0) AS valor_m2
-    FROM {schema}.api_mercado b
+    FROM sidebar.api_mercado b
     INNER JOIN datas_selecionadas d
         ON  b.data_tabela   = d.data_tabela
         AND b.bl_lancamento = d.bl_lancamento
@@ -789,7 +789,7 @@ SELECT jsonb_build_object(
     )
 ) AS data;
         """
-    ).format(schema=sql.Identifier(cfg["schema"]))
+    )
 
     params = {
         "lat": lat,
@@ -870,7 +870,7 @@ def fetch_geo_rankings(
     tipo_imovel_norm: str | None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     cfg = _db_env_config()
-    required = ["dbname", "host", "password", "user", "schema"]
+    required = ["dbname", "host", "password", "user"]
     missing = [key for key in required if not cfg.get(key)]
     if missing:
         raise ValueError("Variáveis de ambiente ausentes: " + ", ".join(missing))
@@ -895,7 +895,7 @@ WITH params AS (
 ),
 mes_ref AS (
     SELECT DATE_TRUNC('month', COALESCE((SELECT data_ref_sql FROM params), MAX(data_tabela))) AS mes
-    FROM {api_schema}.api_mercado
+    FROM sidebar.api_mercado
 ),
 anuncios_filtrados AS (
     SELECT
@@ -909,7 +909,7 @@ anuncios_filtrados AS (
             )
         ) AS tipo_imovel_norm,
         b.valor / NULLIF(b.area, 0) AS valor_m2
-    FROM {api_schema}.api_mercado b
+    FROM sidebar.api_mercado b
     CROSS JOIN params p
     CROSS JOIN mes_ref m
     WHERE DATE_TRUNC('month', b.data_tabela) = m.mes
@@ -991,8 +991,6 @@ SELECT
     NULL::double precision AS mediana_aluguel
 FROM bairros;
             """
-        ).format(
-            api_schema=sql.Identifier(cfg["schema"]),
         )
 
         params = {
@@ -1068,7 +1066,7 @@ st.markdown("""
 # ─── SQL INPUTS / LOAD ───────────────────────────────────────────────────────
 with st.sidebar:
     st.subheader("Conexão PostgreSQL")
-    st.caption("Variáveis esperadas: DB_NAME, HOST_URL, DB_PASS, DB_USER, SCHEMA")
+    st.caption("Variáveis esperadas: DB_NAME, HOST_URL, DB_PASS, DB_USER")
     sql_lat = st.number_input("Latitude", value=-27.5954, format="%.6f")
     sql_lon = st.number_input("Longitude", value=-48.5480, format="%.6f")
     sql_raio = st.number_input("Raio (m)", min_value=100, max_value=100000, value=1000, step=100)

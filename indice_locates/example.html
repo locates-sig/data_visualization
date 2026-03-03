@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Índice LOCATES - Inteligência Imobiliária</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Biblioteca para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Tipografia Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --locates-purple: #4F3C88;
+            --locates-green: #4FE48B;
+            --locates-light: #fdfdff;
+            --locates-dark: #2d244a;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--locates-light);
+            color: var(--locates-dark);
+        }
+        .bg-purple-locates { background-color: var(--locates-purple); }
+        .text-purple-locates { color: var(--locates-purple); }
+        .bg-green-locates { background-color: var(--locates-green); }
+        .text-green-locates { color: var(--locates-green); }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(79, 60, 136, 0.06);
+        }
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            -webkit-overflow-scrolling: touch;
+        }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234F3C88' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 1rem center;
+            background-repeat: no-repeat;
+            background-size: 1.2em 1.2em;
+            padding-right: 2.5rem;
+        }
+        .positive { color: #2bb96a; font-weight: 700; }
+        .negative { color: #ef4444; font-weight: 700; }
+        .neutral { color: #94a3b8; }
+        
+        .chart-container-box {
+            min-height: 300px;
+            height: auto;
+            padding-right: 20px; 
+        }
+
+        @media (min-width: 768px) {
+            .chart-container-box {
+                padding-right: 120px;
+            }
+        }
+
+        .btn-ver-mais {
+            background-color: var(--locates-purple);
+            color: white;
+            padding: 0.85rem 2.2rem;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            white-space: nowrap;
+        }
+        .btn-ver-mais:hover {
+            background-color: var(--locates-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-pdf {
+            background-color: white;
+            color: var(--locates-purple);
+            border: 2px solid var(--locates-purple);
+            padding: 0.6rem 1.2rem;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+        .btn-pdf:hover {
+            background-color: var(--locates-purple);
+            color: white;
+        }
+
+        .filter-select {
+            width: 100%;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--locates-purple);
+            border: 2px solid #f0edf9;
+        }
+        
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 10;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1rem;
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            color: #94a3b8;
+        }
+        @media (min-width: 640px) {
+            .tab-btn {
+                padding: 1rem 2rem;
+                font-size: 0.8rem;
+                letter-spacing: 0.1em;
+                border-bottom-width: 4px;
+            }
+        }
+        .tab-btn.active {
+            color: var(--locates-purple);
+            border-bottom-color: var(--locates-green);
+        }
+
+        .ref-badge-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .ref-select {
+            background-color: var(--locates-green);
+            color: var(--locates-purple);
+            padding: 6px 32px 6px 30px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%234F3C88' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 8px center;
+            background-repeat: no-repeat;
+            background-size: 1.2em 1.2em;
+        }
+
+        .ref-icon {
+            position: absolute;
+            left: 10px;
+            pointer-events: none;
+            color: var(--locates-purple);
+        }
+
+        .city-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            background: #f0edf9;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--locates-purple);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+        .city-tag.active {
+            background: var(--locates-purple);
+            color: white;
+        }
+
+        .no-pdf { display: inline-flex; }
+        @media print {
+            .no-pdf { display: none !important; }
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 md:p-8 bg-[#fcfbff]">
+
+    <div id="export-container" class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 md:mb-12 text-center relative px-2">
+            <div class="flex flex-col items-center">
+                <h1 class="text-3xl sm:text-4xl md:text-6xl font-900 text-purple-locates mb-2 uppercase tracking-tighter">Índice <span class="text-green-locates font-black italic">LOCATES</span></h1>
+                
+                <div class="flex items-center justify-center gap-2 sm:gap-4 mb-4 md:mb-6">
+                    <div class="hidden sm:block h-px w-8 md:w-12 bg-purple-100 no-pdf"></div>
+                    <div class="ref-badge-container">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ref-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <select id="monthSelector" class="ref-select" onchange="updateRefDate()">
+                            <option value="Março 2024">Março 2024</option>
+                            <option value="Fevereiro 2024" selected>Fevereiro 2024</option>
+                            <option value="Janeiro 2024">Janeiro 2024</option>
+                            <option value="Dezembro 2023">Dezembro 2023</option>
+                        </select>
+                    </div>
+                    <div class="hidden sm:block h-px w-8 md:w-12 bg-purple-100 no-pdf"></div>
+                </div>
+
+                <p class="text-gray-500 max-w-2xl mx-auto text-xs sm:text-sm md:text-base font-medium leading-relaxed mb-6">
+                    Inteligência de dados e monitorização estratégica do mercado imobiliário em Santa Catarina.
+                </p>
+
+                <button onclick="generatePDF()" class="btn-pdf no-pdf">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Gerar Relatório PDF</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Navegação -->
+        <nav class="flex justify-center border-b border-purple-50 mb-8 no-pdf overflow-x-auto">
+            <button onclick="switchTab('cidades')" id="tab-cidades" class="tab-btn active whitespace-nowrap">Índice Locates Cidade</button>
+            <button onclick="switchTab('bairros')" id="tab-bairros" class="tab-btn whitespace-nowrap">Índice Locates Bairros</button>
+        </nav>
+
+        <!-- ABA CIDADES -->
+        <div id="content-cidades" class="tab-content">
+            <!-- Ranking Cidades -->
+            <div class="card p-4 sm:p-6 md:p-8 mb-8 border-t-8 border-purple-locates">
+                <div class="mb-8 text-center">
+                    <h2 class="text-purple-locates font-800 text-lg sm:text-xl md:text-2xl mb-1 uppercase tracking-tight text-center">RANKING COMPARATIVO DO m² DAS CIDADES</h2>
+                    <p id="chartSubTitleCidades" class="text-[9px] sm:text-[10px] text-purple-locates opacity-40 uppercase tracking-[0.2em] font-bold">Base de dados atualizada • Ref: Fevereiro 2024</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-[#f9f8ff] p-4 sm:p-6 rounded-2xl border border-purple-50 mb-8 shadow-inner no-pdf">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-800 text-purple-locates opacity-60 uppercase tracking-widest ml-1">Tipo Imóvel</label>
+                        <select id="chartTypeFilter" class="filter-select rounded-xl p-2.5 bg-white cursor-pointer transition-all" onchange="updateRanking()">
+                            <option value="all">Todos os tipos</option>
+                            <option value="Apartamento" selected>Apartamentos</option>
+                            <option value="Casa">Casas</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-800 text-purple-locates opacity-60 uppercase tracking-widest ml-1">Negócio</label>
+                        <select id="chartNegocioFilter" class="filter-select rounded-xl p-2.5 bg-white cursor-pointer transition-all" onchange="updateRanking()">
+                            <option value="Venda" selected>Venda</option>
+                            <option value="Aluguel">Aluguel</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-800 text-purple-locates opacity-60 uppercase tracking-widest ml-1">Dormitórios</label>
+                        <select id="chartDormFilter" class="filter-select rounded-xl p-2.5 bg-white cursor-pointer transition-all" onchange="updateRanking()">
+                            <option value="all">Todas as tipologias</option>
+                            <option value="1">Apenas 1 Dormitório</option>
+                            <option value="2">Apenas 2 Dormitórios</option>
+                            <option value="3">Apenas 3 Dormitórios</option>
+                            <option value="4">Apenas 4 Dormitórios</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="chartWrapperCidades" class="chart-container-box">
+                    <canvas id="rankingChartCidades"></canvas>
+                </div>
+
+                <div class="mt-4 flex justify-center border-t border-purple-50 pt-6 no-pdf">
+                    <button onclick="toggleExpand()" class="btn-ver-mais">
+                        <span class="expandText">Ver lista completa</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="expandIcon h-4 w-4 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela Cidades -->
+            <div class="card overflow-hidden border-b-8 border-purple-locates mb-8">
+                <div class="bg-purple-locates p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h2 class="text-white font-800 text-base sm:text-lg md:text-xl flex items-center gap-3 uppercase tracking-tight">
+                        <div class="bg-green-locates p-1.5 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-purple-locates" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                        </div>
+                        VALORIZAÇÃO ANUAL
+                    </h2>
+                    <span id="rankingTableLabelCidades" class="text-[8px] sm:text-[9px] text-purple-locates bg-green-locates px-4 py-1.5 rounded-full uppercase tracking-widest font-900 shadow-sm text-center"></span>
+                </div>
+                <div class="table-container">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead class="sticky-header">
+                            <tr class="bg-[#fafaff] border-b border-purple-50">
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center w-20">Rank</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest">Cidade</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-right">Média m²</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center">3 Meses</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center">6 Meses</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center">12 Meses</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTableBodyCidades"></tbody>
+                    </table>
+                </div>
+                <div class="p-4 md:p-6 flex justify-center bg-purple-50/10 border-t border-purple-50 no-pdf">
+                    <button onclick="toggleExpand()" class="btn-ver-mais">
+                        <span class="expandText">Ver lista completa</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="expandIcon h-4 w-4 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Histórico Cidades -->
+            <div class="card p-4 sm:p-6 md:p-8 mb-10 border-t-8 border-green-locates">
+                <div class="mb-8 text-center px-2">
+                    <h2 class="text-purple-locates font-800 text-lg sm:text-xl md:text-2xl mb-1 uppercase tracking-tight text-center">EVOLUÇÃO HISTÓRICA DO m²</h2>
+                    <p class="text-[9px] sm:text-[10px] text-purple-locates opacity-40 uppercase tracking-[0.2em] font-bold">Últimos 12 meses • Valores de Venda</p>
+                </div>
+                <div class="mb-8 text-center no-pdf">
+                    <label class="text-[9px] font-900 text-purple-locates/40 uppercase tracking-widest mb-4 block">Personalizar Cidades no Gráfico (Top 3 Inicial):</label>
+                    <div id="historyCityPickerCidades" class="flex flex-wrap justify-center gap-1.5 px-2"></div>
+                </div>
+                <div id="historyChartWrapperCidades" class="h-[350px] sm:h-[450px]">
+                    <canvas id="historyChartCidades"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA BAIRROS -->
+        <div id="content-bairros" class="tab-content hidden">
+            <!-- Ranking Bairros -->
+            <div class="card p-4 sm:p-6 md:p-8 mb-8 border-t-8 border-purple-locates">
+                <div class="mb-8 text-center">
+                    <h2 class="text-purple-locates font-800 text-lg sm:text-xl md:text-2xl mb-1 uppercase tracking-tight text-center">RANKING COMPARATIVO DO m² DOS BAIRROS</h2>
+                    <p id="chartSubTitleBairros" class="text-[9px] sm:text-[10px] text-purple-locates opacity-40 uppercase tracking-[0.2em] font-bold">Base de dados atualizada • Ref: Fevereiro 2024</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#f9f8ff] p-4 sm:p-6 rounded-2xl border border-purple-50 mb-8 shadow-inner no-pdf">
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-800 text-purple-locates opacity-60 uppercase tracking-widest ml-1">Cidade</label>
+                        <select id="bairroCityFilter" class="filter-select rounded-xl p-2.5 bg-white cursor-pointer transition-all" onchange="updateRankingBairros()">
+                            <option value="Florianópolis" selected>Florianópolis</option>
+                            <option value="São José">São José</option>
+                            <option value="Balneário Camboriú">Balneário Camboriú</option>
+                            <option value="Itapema">Itapema</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-800 text-purple-locates opacity-60 uppercase tracking-widest ml-1">Tipo Imóvel</label>
+                        <select id="bairroTypeFilter" class="filter-select rounded-xl p-2.5 bg-white cursor-pointer transition-all" onchange="updateRankingBairros()">
+                            <option value="all">Todos os tipos</option>
+                            <option value="Apartamento" selected>Apartamentos</option>
+                            <option value="Casa">Casas</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-800 text-purple-locates opacity-60 uppercase tracking-widest ml-1">Negócio</label>
+                        <select id="bairroNegocioFilter" class="filter-select rounded-xl p-2.5 bg-white cursor-pointer transition-all" onchange="updateRankingBairros()">
+                            <option value="Venda" selected>Venda</option>
+                            <option value="Aluguel">Aluguel</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[9px] font-800 text-purple-locates opacity-60 uppercase tracking-widest ml-1">Dormitórios</label>
+                        <select id="bairroDormFilter" class="filter-select rounded-xl p-2.5 bg-white cursor-pointer transition-all" onchange="updateRankingBairros()">
+                            <option value="all">Todas as tipologias</option>
+                            <option value="1">Apenas 1 Dormitório</option>
+                            <option value="2">Apenas 2 Dormitórios</option>
+                            <option value="3">Apenas 3 Dormitórios</option>
+                            <option value="4">Apenas 4 Dormitórios</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="chartWrapperBairros" class="chart-container-box">
+                    <canvas id="rankingChartBairros"></canvas>
+                </div>
+
+                <div class="mt-4 flex justify-center border-t border-purple-50 pt-6 no-pdf">
+                    <button onclick="toggleExpandBairros()" class="btn-ver-mais">
+                        <span id="expandTextBairros">Ver lista completa</span>
+                        <svg id="expandIconBairros" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela Bairros -->
+            <div class="card overflow-hidden border-b-8 border-purple-locates mb-8">
+                <div class="bg-purple-locates p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h2 class="text-white font-800 text-base sm:text-lg md:text-xl flex items-center gap-3 uppercase tracking-tight">
+                        <div class="bg-green-locates p-1.5 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-purple-locates" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                        </div>
+                        VALORIZAÇÃO ANUAL
+                    </h2>
+                    <span id="rankingTableLabelBairros" class="text-[8px] sm:text-[9px] text-purple-locates bg-green-locates px-4 py-1.5 rounded-full uppercase tracking-widest font-900 shadow-sm text-center"></span>
+                </div>
+                <div class="table-container">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead class="sticky-header">
+                            <tr class="bg-[#fafaff] border-b border-purple-50">
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center w-20">Rank</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest">Bairro</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-right">Média m²</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center">3 Meses</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center">6 Meses</th>
+                                <th class="p-4 text-[9px] font-800 text-purple-locates opacity-40 uppercase tracking-widest text-center">12 Meses</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTableBodyBairros"></tbody>
+                    </table>
+                </div>
+                <div class="p-4 md:p-6 flex justify-center bg-purple-50/10 border-t border-purple-50 no-pdf">
+                    <button onclick="toggleExpandBairros()" class="btn-ver-mais">
+                        <span id="expandTextTableBairros">Ver lista completa</span>
+                        <svg id="expandIconTableBairros" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Histórico Bairros -->
+            <div class="card p-4 sm:p-6 md:p-8 mb-10 border-t-8 border-green-locates">
+                <div class="mb-8 text-center px-2">
+                    <h2 class="text-purple-locates font-800 text-lg sm:text-xl md:text-2xl mb-1 uppercase tracking-tight text-center">EVOLUÇÃO HISTÓRICA DO m²</h2>
+                    <p class="text-[9px] sm:text-[10px] text-purple-locates opacity-40 uppercase tracking-[0.2em] font-bold">Últimos 12 meses • Bairros Selecionados</p>
+                </div>
+                <div class="mb-8 text-center no-pdf">
+                    <label class="text-[9px] font-900 text-purple-locates/40 uppercase tracking-widest mb-4 block">Personalizar Bairros no Gráfico (Top 3 Inicial):</label>
+                    <div id="historyCityPickerBairros" class="flex flex-wrap justify-center gap-1.5 px-2"></div>
+                </div>
+                <div id="historyChartWrapperBairros" class="h-[350px] sm:h-[450px]">
+                    <canvas id="historyChartBairros"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metodologia -->
+        <footer class="mt-8 mb-16 px-2 no-pdf">
+            <div class="card p-6 md:p-10 bg-white border-l-8 border-purple-locates shadow-sm">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-1 bg-green-locates rounded-full"></div>
+                    <h4 class="text-purple-locates font-900 text-xs sm:text-sm uppercase tracking-[0.2em]">Notas Metodológicas</h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div>
+                        <h5 class="text-[10px] font-900 text-purple-locates/50 uppercase tracking-widest mb-3">Recolha de Dados</h5>
+                        <p class="text-[11px] text-gray-500 leading-relaxed font-500">Monitorização automatizada contínua de mais de 10.000 ofertas ativas mensais nos principais portais de SC.</p>
+                    </div>
+                    <div>
+                        <h5 class="text-[10px] font-900 text-purple-locates/50 uppercase tracking-widest mb-3">Higienização</h5>
+                        <p class="text-[11px] text-gray-500 leading-relaxed font-500">Remoção algorítmica de duplicados e <i>outliers</i> extremos que distorcem a realidade estatística.</p>
+                    </div>
+                    <div>
+                        <h5 class="text-[10px] font-900 text-purple-locates/50 uppercase tracking-widest mb-3">Métrica</h5>
+                        <p class="text-[11px] text-gray-500 leading-relaxed font-500">Utilização da <b>Mediana</b> para maior estabilidade contra flutuações pontuais de imóveis de luxo.</p>
+                    </div>
+                    <div>
+                        <h5 class="text-[10px] font-900 text-purple-locates/50 uppercase tracking-widest mb-3">Tendência</h5>
+                        <p class="text-[11px] text-gray-500 leading-relaxed font-500">Variações calculadas mensalmente para identificar ciclos de valorização em microrregiões.</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        const monthLabels = ["Mar/23", "Abr/23", "Mai/23", "Jun/23", "Jul/23", "Ago/23", "Set/23", "Out/23", "Nov/23", "Dez/23", "Jan/24", "Fev/24"];
+        
+        // Cores distintas para os gráficos temporais
+        const distinctColors = [
+            '#4F3C88', '#2bb96a', '#00a8b5', '#ff7f50', '#ffd700', 
+            '#4169e1', '#e91e63', '#8e44ad', '#16a085', '#2c3e50'
+        ];
+
+        // DADOS CIDADES
+        const rawDataCidades = [
+            { uf: "SC", cidade: "Balneário Camboriú", tipologia: "Apartamento", negocio: "Venda", dorms: "3", vm2: 24500, var3: 5.8, var6: 12.2, var12: 19.5 },
+            { uf: "SC", cidade: "Itapema", tipologia: "Apartamento", negocio: "Venda", dorms: "3", vm2: 18500, var3: 5.2, var6: 10.5, var12: 16.8 },
+            { uf: "SC", cidade: "Florianópolis", tipologia: "Apartamento", negocio: "Venda", dorms: "1", vm2: 15263, var3: 3.4, var6: 6.2, var12: 12.3 },
+            { uf: "SC", cidade: "Florianópolis", tipologia: "Apartamento", negocio: "Venda", dorms: "2", vm2: 11805, var3: 2.6, var6: 4.1, var12: 8.3 },
+            { uf: "SC", cidade: "Florianópolis", tipologia: "Apartamento", negocio: "Venda", dorms: "3", vm2: 12637, var3: 6.4, var6: 5.8, var12: 7.6 },
+            { uf: "SC", cidade: "Florianópolis", tipologia: "Apartamento", negocio: "Venda", dorms: "4", vm2: 12922, var3: 3.9, var6: 6.5, var12: 13.2 },
+            { uf: "SC", cidade: "Itajaí", tipologia: "Apartamento", negocio: "Venda", dorms: "3", vm2: 13800, var3: 4.8, var6: 8.2, var12: 15.8 },
+            { uf: "SC", cidade: "Bombinhas", tipologia: "Apartamento", negocio: "Venda", dorms: "2", vm2: 16200, var3: 2.8, var6: 6.5, var12: 11.9 },
+            { uf: "SC", cidade: "Porto Belo", tipologia: "Apartamento", negocio: "Venda", dorms: "3", vm2: 15200, var3: 4.1, var6: 7.5, var12: 13.5 },
+            { uf: "SC", cidade: "São José", tipologia: "Apartamento", negocio: "Venda", dorms: "1", vm2: 8333, var3: -3.7, var6: 2.1, var12: 14.2 },
+            { uf: "SC", cidade: "São José", tipologia: "Apartamento", negocio: "Venda", dorms: "2", vm2: 7272, var3: -0.4, var6: 1.8, var12: 10.9 },
+            ...generateFakeCidades()
+        ];
+
+        // DADOS BAIRROS
+        const rawDataBairros = [
+            ...generateFakeDataBairros("Florianópolis", ["Agronômica", "Centro", "Itacorubi", "Jurerê Internacional", "Campeche", "Trindade", "Estreito", "Cacupé", "Saco Grande", "Ingleses", "Lagoa da Conceição"], 14000, 80, 4.5, 12.5),
+            ...generateFakeDataBairros("São José", ["Campinas", "Kobrasol", "Barreiros", "Ipiranga", "Areias", "Serraria"], 8500, 45, 3.2, 9.8),
+            ...generateFakeDataBairros("Balneário Camboriú", ["Centro", "Barra Sul", "Pioneiros", "Ariribá"], 22000, 120, 6.1, 21.2),
+            ...generateFakeDataBairros("Itapema", ["Meia Praia", "Centro", "Castelo Branco"], 17000, 95, 5.8, 18.2)
+        ];
+
+        function generateFakeCidades() {
+            const list = ["Garopaba", "Governador Celso Ramos", "Piçarras", "Penha", "Imbituba", "Laguna", "Navegantes", "Palhoça", "Joinville"];
+            const data = [];
+            list.forEach(c => {
+                data.push({ uf: "SC", cidade: c, tipologia: "Apartamento", negocio: "Venda", dorms: "3", vm2: 7000 + Math.random() * 6000, var3: 2.5, var6: 5.0, var12: 11.0 });
+            });
+            return data;
+        }
+
+        function generateFakeDataBairros(cidade, bairros, baseVenda, baseAluguel, var3, var12) {
+            const data = [];
+            bairros.forEach(bairro => {
+                const bV = baseVenda * (0.8 + Math.random() * 0.4);
+                const bA = baseAluguel * (0.8 + Math.random() * 0.4);
+                const negs = ["Venda", "Aluguel"];
+                negs.forEach(neg => {
+                    for(let d=1; d<=4; d++) {
+                        data.push({ cidade, bairro, tipologia: "Apartamento", negocio: neg, dorms: d.toString(), vm2: (neg==="Venda"?bV:bA)*(1+(d-1)*0.07), var3: var3+(Math.random()-0.5), var6: (var3+var12)/2, var12: var12 });
+                    }
+                });
+            });
+            return data;
+        }
+
+        let chartCidades = null, chartBairros = null, historyCidades = null, historyBairros = null;
+        let expandedCidades = false, expandedBairros = false;
+        let selHistCidades = [], selHistBairros = [];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.getElementById('content-' + tab).classList.remove('hidden');
+            if (tab === 'cidades') updateRanking(); else updateRankingBairros();
+        }
+
+        function formatLabel(name, index) {
+            const pos = (index + 1) + "º";
+            const sep = "   |   ";
+            if (name.length > 15 && name.includes(' ')) {
+                const words = name.split(' ');
+                return [pos + sep + words[0], "            " + words.slice(1).join(' ')];
+            }
+            return pos + sep + name;
+        }
+
+        function updateRefDate() {
+            const date = document.getElementById('monthSelector').value;
+            document.getElementById('chartSubTitleCidades').innerText = `Base de dados atualizada • Ref: ${date}`;
+            document.getElementById('chartSubTitleBairros').innerText = `Base de dados atualizada • Ref: ${date}`;
+            updateRanking(); updateRankingBairros();
+        }
+
+        function updateRanking() {
+            const dorms = document.getElementById('chartDormFilter').value;
+            const neg = document.getElementById('chartNegocioFilter').value;
+            const tip = document.getElementById('chartTypeFilter').value;
+            const stats = {};
+
+            rawDataCidades.filter(d => (neg === d.negocio && (dorms === 'all' || d.dorms === dorms) && (tip === 'all' || d.tipologia === tip)))
+                .forEach(item => {
+                    const c = item.cidade;
+                    if (!stats[c]) stats[c] = { vm2: 0, v3: 0, v6: 0, v12: 0, count: 0 };
+                    stats[c].vm2 += item.vm2; stats[c].v3 += item.var3; stats[c].v6 += item.var6; stats[c].v12 += item.var12; stats[c].count++;
+                });
+
+            let data = Object.keys(stats).map(c => ({ name: c, vm2: stats[c].vm2/stats[c].count, v3: stats[c].v3/stats[c].count, v6: stats[c].v6/stats[c].count, v12: stats[c].v12/stats[c].count })).sort((a,b) => b.vm2 - a.vm2);
+            const display = expandedCidades ? data : data.slice(0, 10);
+            document.getElementById('rankingTableLabelCidades').innerText = `${tip==='all'?'Todos':tip} | ${neg} | ${dorms==='all'?'Todas Tipologias':dorms+' Qto(s)'}`;
+            
+            renderChart('rankingChartCidades', display, chartCidades, c => chartCidades = c);
+            renderTable('rankingTableBodyCidades', display);
+            
+            // TOP 3 Default
+            if (selHistCidades.length === 0) selHistCidades = data.slice(0, 3).map(d => d.name);
+            renderPicker('historyCityPickerCidades', data.map(d => d.name), selHistCidades, c => { selHistCidades = c; updateRanking(); });
+            renderHistory('historyChartCidades', data.filter(d => selHistCidades.includes(d.name)), historyCidades, h => historyCidades = h);
+        }
+
+        function updateRankingBairros() {
+            const city = document.getElementById('bairroCityFilter').value;
+            const dorms = document.getElementById('bairroDormFilter').value;
+            const neg = document.getElementById('bairroNegocioFilter').value;
+            const tip = document.getElementById('bairroTypeFilter').value;
+            const stats = {};
+
+            rawDataBairros.filter(d => (d.cidade === city && neg === d.negocio && (dorms === 'all' || d.dorms === dorms) && (tip === 'all' || d.tipologia === tip)))
+                .forEach(item => {
+                    const b = item.bairro;
+                    if (!stats[b]) stats[b] = { vm2: 0, v3: 0, v6: 0, v12: 0, count: 0 };
+                    stats[b].vm2 += item.vm2; stats[b].v3 += item.var3; stats[b].v6 += item.var6; stats[b].v12 += item.var12; stats[b].count++;
+                });
+
+            let data = Object.keys(stats).map(b => ({ name: b, vm2: stats[b].vm2/stats[b].count, v3: stats[b].v3/stats[b].count, v6: stats[b].v6/stats[b].count, v12: stats[b].v12/stats[b].count })).sort((a,b) => b.vm2 - a.vm2);
+            const display = expandedBairros ? data : data.slice(0, 10);
+            document.getElementById('rankingTableLabelBairros').innerText = `${city} | ${tip==='all'?'Todos':tip} | ${neg} | ${dorms==='all'?'Todas Tipologias':dorms+' Qto(s)'}`;
+            
+            renderChart('rankingChartBairros', display, chartBairros, c => chartBairros = c);
+            renderTable('rankingTableBodyBairros', display);
+            
+            // TOP 3 Default
+            if (selHistBairros.length === 0) selHistBairros = data.slice(0, 3).map(d => d.name);
+            // Re-checa se os bairros selecionados ainda pertencem à cidade filtrada
+            if (!data.some(d => selHistBairros.includes(d.name))) selHistBairros = data.slice(0, 3).map(d => d.name);
+            
+            renderPicker('historyCityPickerBairros', data.map(d => d.name), selHistBairros, c => { selHistBairros = c; updateRankingBairros(); });
+            renderHistory('historyChartBairros', data.filter(d => selHistBairros.includes(d.name)), historyBairros, h => historyBairros = h);
+        }
+
+        function renderChart(id, data, instance, setInstance) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (instance) instance.destroy();
+            const rh = window.innerWidth < 640 ? 50 : 55;
+            document.getElementById(id).parentElement.style.height = Math.max(250, data.length * rh) + 'px';
+            const newInst = new Chart(ctx, {
+                type: 'bar', data: { labels: data.map((d, i) => formatLabel(d.name, i)), datasets: [{ data: data.map(d => d.vm2), backgroundColor: data.map((_, i) => i === 0 ? '#4FE48B' : '#4F3C88'), borderRadius: 8, barThickness: (id==='rankingChartCidades'?expandedCidades:expandedBairros) ? 14 : 26 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'right', offset: 12, color: '#4F3C88', font: { family: 'Montserrat', weight: '800', size: 10 }, formatter: v => formatCurrency(v) } }, scales: { x: { display: false }, y: { grid: { display: false }, ticks: { font: { family: 'Montserrat', weight: '700', size: 11 }, color: (ctx) => (ctx.tick.label[0].startsWith('1º') ? '#2bb96a' : '#4F3C88'), padding: 10, textAlign: 'left' } } } }
+            });
+            setInstance(newInst);
+        }
+
+        function renderTable(id, data) {
+            document.getElementById(id).innerHTML = data.map((item, i) => `
+                <tr class="border-b border-purple-50 hover:bg-purple-50/50 transition-all">
+                    <td class="p-4 text-center font-900 text-purple-locates opacity-40 text-[10px]">${i+1}º</td>
+                    <td class="p-4 font-700 text-purple-locates text-xs">${item.name}</td>
+                    <td class="p-4 text-right font-800 text-purple-locates text-xs">${formatCurrency(item.vm2)}</td>
+                    <td class="p-4 text-center font-700 text-xs">${formatVar(item.v3)}</td>
+                    <td class="p-4 text-center font-700 text-xs">${formatVar(item.v6)}</td>
+                    <td class="p-4 text-center font-700 text-xs">${formatVar(item.v12)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPicker(id, all, selected, onUpdate) {
+            const p = document.getElementById(id); p.innerHTML = '';
+            all.forEach(name => {
+                const tag = document.createElement('div');
+                tag.className = `city-tag ${selected.includes(name) ? 'active' : ''}`;
+                tag.innerText = name;
+                tag.onclick = () => { let next = selected.includes(name) ? selected.filter(s => s !== name) : [...selected, name]; if (next.length > 10) next.shift(); onUpdate(next); };
+                p.appendChild(tag);
+            });
+        }
+
+        function renderHistory(id, data, instance, setInstance) {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (instance) instance.destroy();
+            const datasets = data.map((d, idx) => {
+                let current = d.vm2, points = [];
+                let running = current / (1 + (d.v12 || 10) / 100);
+                let step = (current - running) / 12;
+                for (let i = 0; i < 12; i++) { points.push(running + (Math.random() - 0.5) * (current * 0.01)); running += step; }
+                points[11] = current;
+                return { 
+                    label: d.name, data: points, borderColor: distinctColors[idx % distinctColors.length], 
+                    backgroundColor: distinctColors[idx % distinctColors.length],
+                    tension: 0.3, pointRadius: 3, borderWidth: 3, fill: false 
+                };
+            });
+            const newInst = new Chart(ctx, {
+                type: 'line', data: { labels: monthLabels, datasets },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { font: { size: 9, weight: '700' }, usePointStyle: true, pointStyle: 'circle', padding: 20 } 
+                        },
+                        datalabels: { display: window.innerWidth > 768, align: 'top', font: { size: 8, weight: '700' }, formatter: v => 'R$ ' + Math.round(v).toLocaleString() } 
+                    }, 
+                    scales: { 
+                        y: { ticks: { font: { size: 9 }, callback: v => 'R$ ' + v.toLocaleString() } }, 
+                        x: { ticks: { font: { size: 9 } } } 
+                    } 
+                }
+            });
+            setInstance(newInst);
+        }
+
+        function toggleExpand() { expandedCidades = !expandedCidades; document.querySelectorAll('.expandText').forEach(t => t.innerText = expandedCidades ? 'Ver menos cidades' : 'Ver lista completa'); updateRanking(); }
+        function toggleExpandBairros() { expandedBairros = !expandedBairros; document.getElementById('expandTextBairros').innerText = expandedBairros ? 'Ver menos bairros' : 'Ver lista completa'; document.getElementById('expandTextTableBairros').innerText = expandedBairros ? 'Ver menos bairros' : 'Ver lista completa'; updateRankingBairros(); }
+        function formatCurrency(v) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v); }
+        function formatVar(v) { if (!v) return '--'; const cls = v > 0 ? 'positive' : 'negative'; return `<span class="${cls}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</span>`; }
+        function generatePDF() { html2pdf().set({ margin: [10, 5, 10, 5], filename: 'Indice_LOCATES.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(document.getElementById('export-container')).save(); }
+
+        window.onload = () => { updateRanking(); updateRankingBairros(); };
+    </script>
+</body>
+</html>
