@@ -6,7 +6,10 @@ Dashboard conectado ao banco de dados PostgreSQL.
 import os
 import io
 import math
+import json
+import gzip
 import base64
+import urllib.request
 from datetime import datetime
 
 import numpy as np
@@ -46,7 +49,7 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"],
     color: var(--dark) !important;
 }
 
-#MainMenu, footer, header, [data-testid="stDecoration"],
+footer, [data-testid="stDecoration"],
 [data-testid="stStatusWidget"] { display: none !important; }
 
 .block-container {
@@ -84,6 +87,12 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"],
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
+    text-align: center;
+}
+.loc-header h1, .loc-header p {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
 }
 .loc-ref {
     display: inline-flex;
@@ -112,7 +121,7 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"],
 }
 .kpi {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 2px solid var(--purple);
     border-radius: 14px;
     padding: 18px 20px;
     text-align: center;
@@ -234,6 +243,27 @@ div[data-testid="stTabs"] [data-testid="stTabContent"] {
     font-family: 'Montserrat', sans-serif !important;
 }
 
+/* ── Radio ── */
+.stRadio label, .stRadio div[role="radiogroup"] label {
+    color: var(--dark) !important;
+    font-weight: 700 !important;
+    font-family: 'Montserrat', sans-serif !important;
+}
+.stRadio div[role="radiogroup"] label p,
+.stRadio div[role="radiogroup"] label div,
+.stRadio div[role="radiogroup"] label span {
+    color: var(--dark) !important;
+    font-weight: 700 !important;
+    font-family: 'Montserrat', sans-serif !important;
+}
+.stRadio > label {
+    font-size: 0.55rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    color: var(--purple) !important;
+}
+
 /* ── Footer ── */
 .loc-footer {
     background: var(--surface);
@@ -269,8 +299,8 @@ div[data-testid="stTabs"] [data-testid="stTabContent"] {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 PALETTE = [
-    "#4F3C88", "#2bb96a", "#00a8b5", "#ff7f50", "#ffd700",
-    "#4169e1", "#e91e63", "#8e44ad", "#16a085", "#2c3e50",
+    "#4F3C88", "#2bb96a", "#E63946", "#F77F00", "#0077B6",
+    "#9B5DE5", "#00B4D8", "#E91E63", "#2D6A4F", "#D62828",
 ]
 
 MES_NOMES = {
@@ -283,6 +313,29 @@ MES_ABREV = {
     1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
     7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
 }
+
+@st.cache_data(ttl=86400)
+def _load_ibge_sc():
+    """Carrega GeoJSON dos municípios de SC e mapeamento nome→código IBGE."""
+    def _fetch(url):
+        req = urllib.request.Request(url, headers={"Accept-Encoding": "identity"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read()
+        try:
+            raw = gzip.decompress(raw)
+        except Exception:
+            pass
+        return json.loads(raw)
+
+    geojson = _fetch(
+        "https://servicodados.ibge.gov.br/api/v3/malhas/estados/42"
+        "?formato=application/vnd.geo+json&qualidade=minima&intrarregiao=municipio"
+    )
+    muns = _fetch(
+        "https://servicodados.ibge.gov.br/api/v1/localidades/estados/42/municipios"
+    )
+    name_to_code = {m["nome"]: str(m["id"]) for m in muns}
+    return geojson, name_to_code
 
 
 def _get_conn_str() -> str:
@@ -550,6 +603,7 @@ PLOT_BASE = dict(
 def chart_ranking(data: pd.DataFrame, top_n: int = 10) -> go.Figure:
     display = data.head(top_n).iloc[::-1]
     colors = ["#4FE48B" if i == len(display) - 1 else "#4F3C88" for i in range(len(display))]
+    text_colors = ["#2d244a" if i == len(display) - 1 else "#ffffff" for i in range(len(display))]
     labels = [f"{len(display)-i}º  |  {n}" for i, n in enumerate(display["name"])]
 
     fig = go.Figure(go.Bar(
@@ -558,8 +612,9 @@ def chart_ranking(data: pd.DataFrame, top_n: int = 10) -> go.Figure:
         orientation="h",
         marker=dict(color=colors, cornerradius=8),
         text=[fmt_brl(v) for v in display["vm2"]],
-        textposition="outside",
-        textfont=dict(family="Montserrat", weight=800, size=11, color="#4F3C88"),
+        textposition="inside",
+        insidetextanchor="end",
+        textfont=dict(family="Montserrat", weight=800, size=11, color=text_colors),
     ))
     fig.update_layout(
         **PLOT_BASE,
@@ -571,6 +626,89 @@ def chart_ranking(data: pd.DataFrame, top_n: int = 10) -> go.Figure:
     fig.update_yaxes(
         showgrid=False, tickfont=dict(family="Montserrat", size=11, weight=700, color="#4F3C88"),
     )
+    return fig
+
+
+def chart_map_variation(data: pd.DataFrame, var_col: str, period_label: str) -> go.Figure:
+    """Mapa choropleth das cidades por variação percentual do m² (com delimitação municipal)."""
+    try:
+        geojson, name_to_code = _load_ibge_sc()
+    except Exception:
+        return go.Figure()  # fallback silencioso se IBGE offline
+
+    df = data.copy()
+    df["codarea"] = df["name"].map(name_to_code)
+    df = df.dropna(subset=["codarea", var_col])
+
+    if df.empty:
+        return go.Figure()
+
+    # Labels formatados para hover
+    df["_var_fmt"] = df[var_col].apply(lambda v: fmt_var(v))
+    df["_vm2_fmt"] = df["vm2"].apply(lambda v: fmt_brl(v))
+
+    # Escala customizada: vermelho (<0%), laranja (0-5%), amarelo (5-10%), verde (>10%)
+    vmin = min(df[var_col].min(), -1)
+    vmax = max(df[var_col].max(), 12)
+    span = vmax - vmin
+
+    def _n(v):
+        return round(max(0.0, min(1.0, (v - vmin) / span)), 4)
+
+    eps = 0.0001
+    colorscale = [
+        [0.0,               "#dc2626"],   # vermelho forte
+        [_n(0),             "#dc2626"],   # até 0 %  → vermelho
+        [_n(0) + eps,       "#f59e0b"],   # laranja
+        [_n(5),             "#f59e0b"],   # até 5 %  → laranja
+        [_n(5) + eps,       "#eab308"],   # amarelo
+        [_n(10),            "#eab308"],   # até 10 % → amarelo
+        [_n(10) + eps,      "#16a34a"],   # verde
+        [1.0,               "#16a34a"],   # acima 10% → verde
+    ]
+
+    fig = px.choropleth_map(
+        df,
+        geojson=geojson,
+        locations="codarea",
+        featureidkey="properties.codarea",
+        color=var_col,
+        hover_name="name",
+        hover_data={
+            "_vm2_fmt": True,
+            "_var_fmt": True,
+            var_col: False,
+            "vm2": False,
+            "codarea": False,
+        },
+        labels={
+            "_vm2_fmt": "Mediana m²",
+            "_var_fmt": period_label,
+        },
+        color_continuous_scale=colorscale,
+        range_color=[vmin, vmax],
+        zoom=6.2,
+        center={"lat": -27.5, "lon": -49.3},
+        map_style="carto-positron",
+        opacity=0.80,
+    )
+
+    fig.update_layout(
+        height=520,
+        margin=dict(l=0, r=0, t=0, b=0),
+        coloraxis_colorbar=dict(
+            title=dict(
+                text=period_label,
+                font=dict(family="Montserrat", size=12, color="#1e1b2e", weight=700),
+            ),
+            ticksuffix="%",
+            tickfont=dict(family="Montserrat", size=11, color="#1e1b2e", weight=600),
+            thickness=16,
+            len=0.6,
+        ),
+        font=dict(family="Montserrat, sans-serif", color="#1e1b2e"),
+    )
+
     return fig
 
 
@@ -600,8 +738,8 @@ def chart_history(
             y=series.values,
             mode="lines+markers",
             name=name,
-            line=dict(color=PALETTE[idx % len(PALETTE)], width=3),
-            marker=dict(size=5, color=PALETTE[idx % len(PALETTE)]),
+            line=dict(color=PALETTE[idx % len(PALETTE)], width=3.5),
+            marker=dict(size=7, color=PALETTE[idx % len(PALETTE)]),
         ))
     base = {k: v for k, v in PLOT_BASE.items() if k != 'margin'}
     fig.update_layout(
@@ -609,22 +747,23 @@ def chart_history(
         height=420,
         margin=dict(l=10, r=10, t=10, b=10),
         legend=dict(
-            orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5,
-            font=dict(size=10, weight=700),
+            orientation="h", yanchor="top", y=-0.18, xanchor="center", x=0.5,
+            font=dict(size=11, weight=700, color="#2d244a"),
+            tracegroupgap=24, itemwidth=40,
         ),
         hovermode="x unified",
     )
     fig.update_xaxes(
         type="date",
         showgrid=False,
-        tickfont=dict(size=10),
-        linecolor="rgba(79,60,136,0.1)",
-        dtick="M1",  # tick a cada mês
-        tickformat="%b/%y",  # formato "Jan/23"
+        tickfont=dict(size=11, color="#4F3C88", weight=600),
+        linecolor="rgba(79,60,136,0.25)",
+        dtick="M1",
+        tickformat="%b/%y",
     )
     fig.update_yaxes(
-        showgrid=True, gridcolor="rgba(79,60,136,0.06)",
-        tickfont=dict(size=10),
+        showgrid=True, gridcolor="rgba(79,60,136,0.12)",
+        tickfont=dict(size=11, color="#4F3C88", weight=600),
         tickprefix="R$ ", tickformat=",",
     )
     return fig
@@ -632,6 +771,10 @@ def chart_history(
 
 def _chart_history_fallback(data: pd.DataFrame, selected: list[str]) -> go.Figure:
     """Gráfico de evolução histórica sintético (fallback para bairros sem dados históricos)."""
+    from dateutil.relativedelta import relativedelta
+    now = datetime.now()
+    months = [now - relativedelta(months=11 - i) for i in range(12)]
+
     fig = go.Figure()
     for idx, (_, row) in enumerate(data[data["name"].isin(selected)].iterrows()):
         v12 = row["v12"] if not pd.isna(row["v12"]) else 0
@@ -645,22 +788,21 @@ def _chart_history_fallback(data: pd.DataFrame, selected: list[str]) -> go.Figur
             pts.append(round(running + noise))
             running += step
         pts[11] = round(row["vm2"])
-        labels = [f"M{i+1}" for i in range(12)]
         fig.add_trace(go.Scatter(
-            x=labels, y=pts,
+            x=months, y=pts,
             mode="lines+markers",
             name=row["name"],
-            line=dict(color=PALETTE[idx % len(PALETTE)], width=3),
-            marker=dict(size=5, color=PALETTE[idx % len(PALETTE)]),
+            line=dict(color=PALETTE[idx % len(PALETTE)], width=3.5),
+            marker=dict(size=7, color=PALETTE[idx % len(PALETTE)]),
         ))
     base = {k: v for k, v in PLOT_BASE.items() if k != 'margin'}
     fig.update_layout(
         **base, height=420, margin=dict(l=10, r=10, t=10, b=10),
-        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5, font=dict(size=10, weight=700)),
+        legend=dict(orientation="h", yanchor="top", y=-0.18, xanchor="center", x=0.5, font=dict(size=11, weight=700, color="#2d244a"), tracegroupgap=24, itemwidth=40),
         hovermode="x unified",
     )
-    fig.update_xaxes(showgrid=False, tickfont=dict(size=10), linecolor="rgba(79,60,136,0.1)")
-    fig.update_yaxes(showgrid=True, gridcolor="rgba(79,60,136,0.06)", tickfont=dict(size=10), tickprefix="R$ ", tickformat=",")
+    fig.update_xaxes(type="date", showgrid=False, tickfont=dict(size=11, color="#4F3C88", weight=600), linecolor="rgba(79,60,136,0.25)", dtick="M1", tickformat="%b/%y")
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(79,60,136,0.12)", tickfont=dict(size=11, color="#4F3C88", weight=600), tickprefix="R$ ", tickformat=",")
     return fig
 
 
@@ -813,7 +955,7 @@ CIDADES_COM_BAIRROS = sorted(df_bairros["cidade"].unique().tolist())
 #  KPIs
 # ═══════════════════════════════════════════════════════════════════════════════
 venda_apt = df_cidades[(df_cidades["negocio"] == "Venda") & (df_cidades["tipologia"] == "Apartamento")]
-n_cidades = venda_apt["cidade"].nunique()
+n_cidades = df_cidades["cidade"].nunique()
 mediana_sc = venda_apt["vm2"].median() if not venda_apt.empty else 0
 avg_var12 = venda_apt["var12"].mean() if not venda_apt.empty else 0
 n_bairros = df_bairros["bairro"].nunique() if "bairro" in df_bairros.columns else 0
@@ -837,7 +979,7 @@ st.markdown(f"""
     </div>
     <div class="kpi">
         <div class="kpi-val">{anuncios_label}</div>
-        <div class="kpi-label">Anúncios Processados/mês</div>
+        <div class="kpi-label">Anúncios Processados</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -922,6 +1064,26 @@ with tab_cidades:
             },
         )
 
+        # ── Mapa de Calor ──
+        st.markdown("""
+        <div class="sec-card purple-bot" style="margin-top:1.5rem">
+            <div class="sec-header">Mapa de Variação do m² por Cidade</div>
+            <div class="sec-sub">Visualização geográfica da variação percentual</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+        periodo_map = st.radio(
+            "Período de variação",
+            ["3 Meses", "6 Meses", "12 Meses"],
+            horizontal=True,
+            key="periodo_mapa",
+        )
+        var_col_map = {"3 Meses": "v3", "6 Meses": "v6", "12 Meses": "v12"}[periodo_map]
+
+        fig_map = chart_map_variation(agg_c, var_col_map, periodo_map)
+        st.plotly_chart(fig_map, use_container_width=True)
+
         # ── Histórico ──
         st.markdown(f"""
         <div class="sec-card green-top" style="margin-top:1.5rem">
@@ -937,6 +1099,7 @@ with tab_cidades:
             cities_avail,
             default=default_sel,
             key="hist_c",
+            placeholder="Selecione as cidades"
         )
         if sel_cities:
             fig_hist_c = chart_history(
