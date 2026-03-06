@@ -18,6 +18,9 @@ import psycopg
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ─── PAGE CONFIG ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -1475,95 +1478,7 @@ with tab_cidades:
             table_html_c = render_html_table(display_c, "Cidade")
             st.markdown(table_html_c, unsafe_allow_html=True)
         # ── Mapa de Calor ──
-        with st.container():
-            st.markdown("""
-            <div id="sec-mapa-c"></div>
-            <div class="sec-header">Mapa de Variação do m² por Cidade</div>
-            <div class="sec-sub">Visualização geográfica da variação percentual</div>
-            """, unsafe_allow_html=True)
 
-            # ── Pill selector para período ──
-            st.markdown('<div id="map-period-anchor"></div>', unsafe_allow_html=True)
-            mc1, mc2 = st.columns([3, 1])
-            with mc1:
-                periodo_map = st.radio(
-                    "Período",
-                    ["3 Meses", "6 Meses", "12 Meses"],
-                    horizontal=True,
-                    key="periodo_mapa",
-                    label_visibility="collapsed",
-                )
-            var_col_map = {"3 Meses": "v3", "6 Meses": "v6", "12 Meses": "v12"}[periodo_map]
-
-            with mc2:
-                cidade_destaque = st.selectbox(
-                    "Destacar cidade",
-                    ["Todas"] + sorted(agg_c["name"].tolist()),
-                    key="cidade_destaque_map",
-                )
-
-            # Badge de contagem por faixa
-            counts = _count_per_range(agg_c, var_col_map)
-            st.markdown(f"""
-            <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
-                <span style="font-size:0.6rem;font-weight:800;color:#dc2626;background:rgba(239,68,68,0.12);padding:3px 12px;border-radius:999px">&#9660; Negativa: {counts['neg']}</span>
-                <span style="font-size:0.6rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.12);padding:3px 12px;border-radius:999px">0–5%: {counts['low']}</span>
-                <span style="font-size:0.6rem;font-weight:800;color:#a16207;background:rgba(234,179,8,0.15);padding:3px 12px;border-radius:999px">5–10%: {counts['mid']}</span>
-                <span style="font-size:0.6rem;font-weight:800;color:#16a34a;background:rgba(43,185,106,0.12);padding:3px 12px;border-radius:999px">&#9650; >10%: {counts['high']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Filtrar se cidade selecionada
-            map_data = agg_c if cidade_destaque == "Todas" else agg_c[agg_c["name"] == cidade_destaque]
-
-            fig_map = chart_map_variation(agg_c, var_col_map, periodo_map)
-
-            # Se cidade destacada, adicionar marcador
-            if cidade_destaque != "Todas":
-                highlighted = agg_c[agg_c["name"] == cidade_destaque]
-                if not highlighted.empty:
-                    row_h = highlighted.iloc[0]
-                    geojson_sc, name_to_code = _load_ibge_sc()
-                    # Coordenadas aproximadas das cidades de SC
-                    city_coords = {
-                        "Florianópolis": (-27.5954, -48.5480),
-                        "São José": (-27.6136, -48.6356),
-                        "Balneário Camboriú": (-26.9906, -48.6348),
-                        "Itapema": (-27.0903, -48.6114),
-                        "Itajaí": (-26.9078, -48.6616),
-                        "Joinville": (-26.3045, -48.8487),
-                        "Palhoça": (-27.6453, -48.6686),
-                        "Blumenau": (-26.9194, -49.0661),
-                        "Criciúma": (-28.6775, -49.3697),
-                        "Chapecó": (-27.1006, -52.6158),
-                        "Lages": (-27.8161, -50.3261),
-                        "Jaraguá do Sul": (-26.4843, -49.0728),
-                        "Brusque": (-27.0979, -48.9168),
-                        "Tubarão": (-28.4669, -49.0068),
-                        "Navegantes": (-26.8988, -48.6544),
-                        "Camboriú": (-27.0254, -48.6544),
-                        "Gaspar": (-26.9316, -49.1157),
-                        "Biguaçu": (-27.4943, -48.6558),
-                        "Tijucas": (-27.2414, -48.6311),
-                        "Porto Belo": (-27.1547, -48.5544),
-                        "Bombinhas": (-27.1394, -48.5147),
-                        "Piçarras": (-26.7617, -48.6717),
-                        "Penha": (-26.7678, -48.6456),
-                    }
-                    if cidade_destaque in city_coords:
-                        lat, lon = city_coords[cidade_destaque]
-                        fig_map.add_trace(go.Scattermap(
-                            lat=[lat], lon=[lon],
-                            mode="markers+text",
-                            marker=dict(size=14, color="#4F3C88", symbol="circle"),
-                            text=[cidade_destaque],
-                            textposition="top center",
-                            textfont=dict(family="Montserrat", size=12, color="#4F3C88", weight=800),
-                            showlegend=False,
-                            hoverinfo="skip",
-                        ))
-
-            st.plotly_chart(fig_map, use_container_width=True)
 
         # ── Histórico ──
         with st.container():
@@ -1588,6 +1503,95 @@ with tab_cidades:
                 )
                 st.plotly_chart(fig_hist_c, use_container_width=True)
 
+    with st.container():
+        st.markdown("""
+        <div id="sec-mapa-c"></div>
+        <div class="sec-header">Mapa de Variação do m² por Cidade</div>
+        <div class="sec-sub">Visualização geográfica da variação percentual</div>
+        """, unsafe_allow_html=True)
+
+        # ── Pill selector para período ──
+        st.markdown('<div id="map-period-anchor"></div>', unsafe_allow_html=True)
+        mc1, mc2 = st.columns([3, 1])
+        with mc1:
+            periodo_map = st.radio(
+                "Período",
+                ["3 Meses", "6 Meses", "12 Meses"],
+                horizontal=True,
+                key="periodo_mapa",
+                label_visibility="collapsed",
+            )
+        var_col_map = {"3 Meses": "v3", "6 Meses": "v6", "12 Meses": "v12"}[periodo_map]
+
+        with mc2:
+            cidade_destaque = st.selectbox(
+                "Destacar cidade",
+                ["Todas"] + sorted(agg_c["name"].tolist()),
+                key="cidade_destaque_map",
+            )
+
+        # Badge de contagem por faixa
+        counts = _count_per_range(agg_c, var_col_map)
+        st.markdown(f"""
+        <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+            <span style="font-size:0.6rem;font-weight:800;color:#dc2626;background:rgba(239,68,68,0.12);padding:3px 12px;border-radius:999px">&#9660; Negativa: {counts['neg']}</span>
+            <span style="font-size:0.6rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.12);padding:3px 12px;border-radius:999px">0–5%: {counts['low']}</span>
+            <span style="font-size:0.6rem;font-weight:800;color:#a16207;background:rgba(234,179,8,0.15);padding:3px 12px;border-radius:999px">5–10%: {counts['mid']}</span>
+            <span style="font-size:0.6rem;font-weight:800;color:#16a34a;background:rgba(43,185,106,0.12);padding:3px 12px;border-radius:999px">&#9650; >10%: {counts['high']}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Filtrar se cidade selecionada
+        map_data = agg_c if cidade_destaque == "Todas" else agg_c[agg_c["name"] == cidade_destaque]
+
+        fig_map = chart_map_variation(agg_c, var_col_map, periodo_map)
+
+        # Se cidade destacada, adicionar marcador
+        if cidade_destaque != "Todas":
+            highlighted = agg_c[agg_c["name"] == cidade_destaque]
+            if not highlighted.empty:
+                row_h = highlighted.iloc[0]
+                geojson_sc, name_to_code = _load_ibge_sc()
+                # Coordenadas aproximadas das cidades de SC
+                city_coords = {
+                    "Florianópolis": (-27.5954, -48.5480),
+                    "São José": (-27.6136, -48.6356),
+                    "Balneário Camboriú": (-26.9906, -48.6348),
+                    "Itapema": (-27.0903, -48.6114),
+                    "Itajaí": (-26.9078, -48.6616),
+                    "Joinville": (-26.3045, -48.8487),
+                    "Palhoça": (-27.6453, -48.6686),
+                    "Blumenau": (-26.9194, -49.0661),
+                    "Criciúma": (-28.6775, -49.3697),
+                    "Chapecó": (-27.1006, -52.6158),
+                    "Lages": (-27.8161, -50.3261),
+                    "Jaraguá do Sul": (-26.4843, -49.0728),
+                    "Brusque": (-27.0979, -48.9168),
+                    "Tubarão": (-28.4669, -49.0068),
+                    "Navegantes": (-26.8988, -48.6544),
+                    "Camboriú": (-27.0254, -48.6544),
+                    "Gaspar": (-26.9316, -49.1157),
+                    "Biguaçu": (-27.4943, -48.6558),
+                    "Tijucas": (-27.2414, -48.6311),
+                    "Porto Belo": (-27.1547, -48.5544),
+                    "Bombinhas": (-27.1394, -48.5147),
+                    "Piçarras": (-26.7617, -48.6717),
+                    "Penha": (-26.7678, -48.6456),
+                }
+                if cidade_destaque in city_coords:
+                    lat, lon = city_coords[cidade_destaque]
+                    fig_map.add_trace(go.Scattermap(
+                        lat=[lat], lon=[lon],
+                        mode="markers+text",
+                        marker=dict(size=14, color="#4F3C88", symbol="circle"),
+                        text=[cidade_destaque],
+                        textposition="top center",
+                        textfont=dict(family="Montserrat", size=12, color="#4F3C88", weight=800),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    ))
+
+        st.plotly_chart(fig_map, use_container_width=True)
 
 # ─────────────────────────────────────────────────
 #  TAB: BAIRROS
@@ -1691,8 +1695,7 @@ with pdf_placeholder:
         help="Abra o HTML no navegador e use Ctrl+P para salvar como PDF",
         use_container_width=True,
     )
-
-
+    
 # ═══════════════════════════════════════════════════════════════════════════════
 #  FOOTER
 # ═══════════════════════════════════════════════════════════════════════════════
