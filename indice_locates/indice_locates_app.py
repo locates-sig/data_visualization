@@ -18,6 +18,9 @@ import psycopg
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ─── PAGE CONFIG ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -36,8 +39,8 @@ st.markdown("""
     --purple: #4F3C88;
     --green: #4FE48B;
     --dark: #2d244a;
-    --light: #fdfdff;
-    --surface: #ffffff;
+    --light: #F7F7F7;
+    --surface: #F7F7F7;
     --border: #f0edf9;
     --muted: #94a3b8;
 }
@@ -64,7 +67,7 @@ footer, [data-testid="stDecoration"],
 /* ── Header ── */
 .loc-header {
     text-align: center;
-    padding: 2rem 0 1.5rem;
+    padding: 2rem 0 0.25rem;
 }
 .loc-title {
     font-size: 3.2rem;
@@ -74,20 +77,32 @@ footer, [data-testid="stDecoration"],
     letter-spacing: -0.04em;
     margin: 0;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25em;
 }
 .loc-title em {
-    font-style: italic;
+    font-style: normal;
     color: var(--green);
 }
+.loc-title img {
+    height: 1.4em;
+    vertical-align: middle;
+    display: inline-block;
+}
 .loc-subtitle {
-    font-size: 0.85rem;
+    font-size: 1.05rem;
     color: var(--muted);
     font-weight: 500;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
     max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
+    display: block !important;
+    width: 100% !important;
 }
 .loc-header h1, .loc-header p {
     text-align: center;
@@ -121,20 +136,20 @@ footer, [data-testid="stDecoration"],
 }
 .kpi {
     background: var(--surface);
-    border: 2px solid var(--purple);
+    border: none;
     border-radius: 14px;
     padding: 18px 20px;
     text-align: center;
-    box-shadow: 0 2px 12px rgba(79, 60, 136, 0.05);
+    box-shadow: 0 4px 16px rgba(79, 60, 136, 0.10), 0 1px 3px rgba(79, 60, 136, 0.06);
 }
 .kpi-val {
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     font-weight: 900;
     color: var(--purple);
     margin-bottom: 2px;
 }
 .kpi-label {
-    font-size: 0.5rem;
+    font-size: 0.65rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.15em;
@@ -160,7 +175,7 @@ footer, [data-testid="stDecoration"],
 .sec-card.green-top { border-top: 8px solid var(--green); }
 .sec-card.purple-bot { border-bottom: 8px solid var(--purple); }
 .sec-header {
-    font-size: 1.1rem;
+    font-size: 1.6rem;
     font-weight: 800;
     color: var(--purple);
     text-transform: uppercase;
@@ -169,7 +184,7 @@ footer, [data-testid="stDecoration"],
     margin-bottom: 4px;
 }
 .sec-sub {
-    font-size: 0.55rem;
+    font-size: 0.75rem;
     color: var(--purple);
     opacity: 0.4;
     text-transform: uppercase;
@@ -232,14 +247,32 @@ div[data-testid="stTabs"] [data-testid="stTabContent"] {
     padding: 0 !important;
 }
 
+/* ── Filter box inside ranking sections ── */
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #filter-box-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #filter-box-b) {
+    background: #f2f1f6;
+    border-radius: 12px;
+    padding: 20px 24px 16px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 8px rgba(79, 60, 136, 0.08), 0 1px 3px rgba(79, 60, 136, 0.04);
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #filter-box-c) [data-testid="stSelectbox"] > div > div,
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #filter-box-b) [data-testid="stSelectbox"] > div > div {
+    background: #ffffff !important;
+}
+
 /* ── Selectbox ── */
-.stSelectbox label, .stMultiSelect label {
-    font-size: 0.55rem !important;
+.stSelectbox label, .stMultiSelect label,
+[data-testid="stSelectbox"] [data-testid="stWidgetLabel"],
+[data-testid="stMultiSelect"] [data-testid="stWidgetLabel"],
+[data-testid="stSelectbox"] [data-testid="stWidgetLabel"] p,
+[data-testid="stMultiSelect"] [data-testid="stWidgetLabel"] p {
+    font-size: 0.75rem !important;
     font-weight: 800 !important;
     letter-spacing: 0.12em !important;
     text-transform: uppercase !important;
     color: var(--purple) !important;
-    opacity: 0.6;
+    opacity: 1 !important;
     font-family: 'Montserrat', sans-serif !important;
 }
 
@@ -288,8 +321,218 @@ div[data-testid="stTabs"] [data-testid="stTabContent"] {
     line-height: 1.7;
 }
 
+/* ── Sec-card containers via anchor ── */
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-ranking-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-mapa-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-val-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-ranking-b),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-b),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-val-b) {
+    background: var(--surface) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 20px rgba(79, 60, 136, 0.06) !important;
+    padding: 1.5rem 2rem !important;
+    margin-bottom: 1.5rem !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-ranking-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-ranking-b) {
+    border-top: 8px solid #e0dde8 !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-mapa-c) {
+    border-top: 8px solid #e0dde8 !important;
+    border-bottom: none !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-b) {
+    border-top: 8px solid #e0dde8 !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-val-c),
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-val-b) {
+    border-top: 8px solid #e0dde8 !important;
+}
+
+/* ── HTML table styling (replaces st.dataframe) ── */
+.loc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: none;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.loc-table thead th {
+    padding: 12px 14px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border: none;
+    text-align: left;
+    background: var(--purple);
+}
+.loc-table thead th:first-child { text-align: center; width: 50px; }
+.loc-table thead th:nth-child(3) { text-align: right; }
+.loc-table thead th:nth-child(n+4) { text-align: center; }
+.loc-table tbody td {
+    padding: 11px 14px;
+    color: #2d244a;
+    border: none;
+    border-bottom: 1px solid #f0edf9;
+    font-weight: 600;
+    background: white;
+}
+.loc-table tbody td:first-child {
+    text-align: center; font-weight: 900; color: var(--purple); opacity: 0.4; font-size: 0.72rem;
+}
+.loc-table tbody td:nth-child(2) { font-weight: 700; color: var(--purple); }
+.loc-table tbody td:nth-child(3) { text-align: right; font-weight: 800; color: var(--purple); }
+.loc-table tbody td:nth-child(n+4) { text-align: center; font-weight: 700; }
+.loc-table tbody tr:last-child td { border-bottom: none; }
+/* Override Streamlit default table borders */
+[data-testid="stMarkdown"] table,
+[data-testid="stMarkdown"] th,
+[data-testid="stMarkdown"] td {
+    border: none !important;
+    border-right: none !important;
+    border-left: none !important;
+}
+[data-testid="stMarkdown"] .loc-table thead th {
+    border: none !important;
+    background: var(--purple) !important;
+    color: white !important;
+}
+[data-testid="stMarkdown"] .loc-table tbody td {
+    border-bottom: 1px solid #f0edf9 !important;
+}
+[data-testid="stMarkdown"] .loc-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+.var-pos { color: #16a34a !important; font-weight: 700 !important; }
+.var-neu { color: #d97706 !important; font-weight: 700 !important; }
+.var-neg { color: #dc2626 !important; font-weight: 700 !important; }
+
+/* ── Map period pill selector ── */
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #map-period-anchor) .stRadio > label {
+    display: none !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #map-period-anchor) .stRadio div[role="radiogroup"] {
+    display: flex !important;
+    gap: 0 !important;
+    background: #f0edf9 !important;
+    border-radius: 999px !important;
+    padding: 3px !important;
+    justify-content: center !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #map-period-anchor) .stRadio div[role="radiogroup"] label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 20px !important;
+    border-radius: 999px !important;
+    font-size: 0.65rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    color: var(--purple) !important;
+    opacity: 0.5 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    background: transparent !important;
+    border: none !important;
+    white-space: nowrap !important;
+    min-height: unset !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #map-period-anchor) .stRadio div[role="radiogroup"] label:has(input:checked) {
+    background: var(--purple) !important;
+    color: white !important;
+    opacity: 1 !important;
+    box-shadow: 0 2px 8px rgba(79,60,136,0.25) !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #map-period-anchor) .stRadio div[role="radiogroup"] label p,
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #map-period-anchor) .stRadio div[role="radiogroup"] label div,
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #map-period-anchor) .stRadio div[role="radiogroup"] label span {
+    color: inherit !important;
+    font-weight: inherit !important;
+    font-size: inherit !important;
+}
+
 /* ── Plotly fixes ── */
 .stPlotlyChart { margin-bottom: -1rem; }
+
+/* ── PDF export button ── */
+[data-testid="stVerticalBlock"]:has(#pdf-btn-anchor) [data-testid="stElementContainer"]:has([data-testid="stDownloadButton"]) {
+    display: flex !important;
+    justify-content: center !important;
+}
+[data-testid="stVerticalBlock"]:has(#pdf-btn-anchor) [data-testid="stDownloadButton"] {
+    display: flex !important;
+    justify-content: center !important;
+}
+[data-testid="stVerticalBlock"]:has(#pdf-btn-anchor) [data-testid="stDownloadButton"] button {
+    background: transparent !important;
+    border: 2px solid var(--purple) !important;
+    color: var(--purple) !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 0.65rem !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    border-radius: 999px !important;
+    padding: 7px 24px !important;
+    transition: background 0.2s ease, color 0.2s ease !important;
+    width: 100% !important;
+    box-shadow: none !important;
+}
+[data-testid="stVerticalBlock"]:has(#pdf-btn-anchor) [data-testid="stDownloadButton"] button:hover {
+    background: var(--purple) !important;
+    color: #ffffff !important;
+}
+[data-testid="stVerticalBlock"]:has(#pdf-btn-anchor) [data-testid="stDownloadButton"] button p {
+    font-size: 0.65rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+}
+
+/* ── Ref-date selectbox as green pill ── */
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #ref-selector-anchor) [data-testid="stSelectbox"] > label { display: none !important; }
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #ref-selector-anchor) [data-testid="stSelectbox"] {
+    display: flex;
+    justify-content: center;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #ref-selector-anchor) [data-testid="stSelectbox"] > div {
+    width: auto !important;
+    min-width: 180px !important;
+    max-width: 260px !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #ref-selector-anchor) [data-testid="stSelectbox"] > div > div {
+    background: var(--green) !important;
+    border: none !important;
+    border-radius: 999px !important;
+    color: var(--purple) !important;
+    font-weight: 900 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    padding: 5px 20px !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    min-height: unset !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #ref-selector-anchor) [data-testid="stSelectbox"] > div > div > div {
+    color: var(--purple) !important;
+    font-weight: 900 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #ref-selector-anchor) [data-testid="stSelectbox"] svg {
+    color: var(--purple) !important;
+    fill: var(--purple) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -554,6 +797,14 @@ def fmt_var(v: float) -> str:
     return f"{sign}{v:.1f}%"
 
 
+def fmt_var_html(v: float) -> str:
+    """Variação formatada com seta Unicode (para tabelas HTML)."""
+    if pd.isna(v):
+        return "--"
+    arrow = '<span style="font-size:0.55em;vertical-align:middle">&#9650;</span>' if v > 0 else '<span style="font-size:0.55em;vertical-align:middle">&#9660;</span>' if v < 0 else ""
+    return f"{arrow} {abs(v):.1f}%"
+
+
 def var_color(v: float) -> str:
     if pd.isna(v):
         return "#94a3b8"
@@ -572,11 +823,47 @@ def style_var_cell(val):
         return "background-color: rgba(43,185,106,0.18); color: #16a34a; font-weight: 700"
 
 
+def _var_css_class(val) -> str:
+    """Retorna classe CSS para a célula de variação."""
+    if pd.isna(val):
+        return ""
+    if val < 0:
+        return "var-neg"
+    elif val <= 5:
+        return "var-neu"
+    return "var-pos"
+
+
+def render_html_table(df: pd.DataFrame, name_col: str) -> str:
+    """Gera HTML de tabela estilizada a partir do dataframe agregado."""
+    headers = f"""<thead><tr>
+        <th>#</th><th>{name_col}</th><th>Mediana m²</th>
+        <th>3 Meses</th><th>6 Meses</th><th>12 Meses</th>
+    </tr></thead>"""
+
+    rows = []
+    for i, row in df.iterrows():
+        rank = f"{i + 1}º"
+        name = row["name"]
+        vm2 = fmt_brl(row["vm2"]) if not pd.isna(row["vm2"]) else "--"
+        v3_cls = _var_css_class(row["v3"])
+        v6_cls = _var_css_class(row["v6"])
+        v12_cls = _var_css_class(row["v12"])
+        rows.append(f"""<tr>
+            <td>{rank}</td><td>{name}</td><td>{vm2}</td>
+            <td class="{v3_cls}">{fmt_var_html(row['v3'])}</td>
+            <td class="{v6_cls}">{fmt_var_html(row['v6'])}</td>
+            <td class="{v12_cls}">{fmt_var_html(row['v12'])}</td>
+        </tr>""")
+
+    return f'<table class="loc-table">{headers}<tbody>{chr(10).join(rows)}</tbody></table>'
+
+
 def aggregate(df: pd.DataFrame, group_col: str, neg: str, tip: str, dorms: str) -> pd.DataFrame:
     mask = df["negocio"] == neg
     if tip != "Todos":
         mask &= df["tipologia"] == tip
-    if dorms != "Todas":
+    if dorms != "Todas as tipologias":
         mask &= df["dorms"] == dorms
     sub = df[mask]
     if sub.empty:
@@ -629,12 +916,23 @@ def chart_ranking(data: pd.DataFrame, top_n: int = 10) -> go.Figure:
     return fig
 
 
+def _count_per_range(df: pd.DataFrame, var_col: str) -> dict:
+    """Conta cidades em cada faixa de variação."""
+    s = df[var_col].dropna()
+    return {
+        "neg": int((s < 0).sum()),
+        "low": int(((s >= 0) & (s <= 5)).sum()),
+        "mid": int(((s > 5) & (s <= 10)).sum()),
+        "high": int((s > 10).sum()),
+    }
+
+
 def chart_map_variation(data: pd.DataFrame, var_col: str, period_label: str) -> go.Figure:
     """Mapa choropleth das cidades por variação percentual do m² (com delimitação municipal)."""
     try:
         geojson, name_to_code = _load_ibge_sc()
     except Exception:
-        return go.Figure()  # fallback silencioso se IBGE offline
+        return go.Figure()
 
     df = data.copy()
     df["codarea"] = df["name"].map(name_to_code)
@@ -643,68 +941,84 @@ def chart_map_variation(data: pd.DataFrame, var_col: str, period_label: str) -> 
     if df.empty:
         return go.Figure()
 
+    # ── Faixa discreta ──
+    def _faixa(v):
+        if v < 0:
+            return "< 0%"
+        elif v <= 5:
+            return "0 – 5%"
+        elif v <= 10:
+            return "5 – 10%"
+        return "> 10%"
+
+    faixa_order = ["< 0%", "0 – 5%", "5 – 10%", "> 10%"]
+    faixa_colors = {
+        "< 0%": "#dc2626",
+        "0 – 5%": "#f59e0b",
+        "5 – 10%": "#eab308",
+        "> 10%": "#16a34a",
+    }
+    df["Faixa"] = df[var_col].apply(_faixa)
+    df["Faixa"] = pd.Categorical(df["Faixa"], categories=faixa_order, ordered=True)
+
     # Labels formatados para hover
     df["_var_fmt"] = df[var_col].apply(lambda v: fmt_var(v))
     df["_vm2_fmt"] = df["vm2"].apply(lambda v: fmt_brl(v))
-
-    # Escala customizada: vermelho (<0%), laranja (0-5%), amarelo (5-10%), verde (>10%)
-    vmin = min(df[var_col].min(), -1)
-    vmax = max(df[var_col].max(), 12)
-    span = vmax - vmin
-
-    def _n(v):
-        return round(max(0.0, min(1.0, (v - vmin) / span)), 4)
-
-    eps = 0.0001
-    colorscale = [
-        [0.0,               "#dc2626"],   # vermelho forte
-        [_n(0),             "#dc2626"],   # até 0 %  → vermelho
-        [_n(0) + eps,       "#f59e0b"],   # laranja
-        [_n(5),             "#f59e0b"],   # até 5 %  → laranja
-        [_n(5) + eps,       "#eab308"],   # amarelo
-        [_n(10),            "#eab308"],   # até 10 % → amarelo
-        [_n(10) + eps,      "#16a34a"],   # verde
-        [1.0,               "#16a34a"],   # acima 10% → verde
-    ]
+    df["_periodo"] = period_label
 
     fig = px.choropleth_map(
         df,
         geojson=geojson,
         locations="codarea",
         featureidkey="properties.codarea",
-        color=var_col,
+        color="Faixa",
         hover_name="name",
         hover_data={
             "_vm2_fmt": True,
             "_var_fmt": True,
+            "_periodo": True,
+            "Faixa": False,
             var_col: False,
             "vm2": False,
             "codarea": False,
         },
         labels={
             "_vm2_fmt": "Mediana m²",
-            "_var_fmt": period_label,
+            "_var_fmt": "Variação",
+            "_periodo": "Período",
         },
-        color_continuous_scale=colorscale,
-        range_color=[vmin, vmax],
+        color_discrete_map=faixa_colors,
+        category_orders={"Faixa": faixa_order},
         zoom=6.2,
         center={"lat": -27.5, "lon": -49.3},
         map_style="carto-positron",
-        opacity=0.80,
+        opacity=0.82,
+    )
+
+    # Bordas municipais mais visíveis
+    fig.update_traces(
+        marker_line_width=1.2,
+        marker_line_color="rgba(79,60,136,0.35)",
     )
 
     fig.update_layout(
         height=520,
         margin=dict(l=0, r=0, t=0, b=0),
-        coloraxis_colorbar=dict(
+        legend=dict(
             title=dict(
                 text=period_label,
-                font=dict(family="Montserrat", size=12, color="#1e1b2e", weight=700),
+                font=dict(family="Montserrat", size=11, color="#4F3C88", weight=800),
             ),
-            ticksuffix="%",
-            tickfont=dict(family="Montserrat", size=11, color="#1e1b2e", weight=600),
-            thickness=16,
-            len=0.6,
+            font=dict(family="Montserrat", size=11, color="#2d244a", weight=600),
+            orientation="v",
+            yanchor="top",
+            y=0.92,
+            xanchor="right",
+            x=0.95,
+            bgcolor="rgba(255,255,255,0.85)",
+            bordercolor="rgba(79,60,136,0.15)",
+            borderwidth=1,
+            itemsizing="constant",
         ),
         font=dict(family="Montserrat, sans-serif", color="#1e1b2e"),
     )
@@ -724,7 +1038,7 @@ def chart_history(
     mask = df_hist["negocio"] == neg
     if tip != "Todos":
         mask &= df_hist["tipologia"] == tip
-    if dorms != "Todas":
+    if dorms != "Todas as tipologias":
         mask &= df_hist["dorms"] == dorms
     sub = df_hist[mask & df_hist[group_col].isin(selected)]
 
@@ -917,22 +1231,70 @@ except Exception as e:
 # ═══════════════════════════════════════════════════════════════════════════════
 #  HEADER
 # ═══════════════════════════════════════════════════════════════════════════════
-st.markdown("""
+_logo_path = os.path.join(os.path.dirname(__file__), "logo_dark.jpeg")
+try:
+    with open(_logo_path, "rb") as _f:
+        _logo_b64 = base64.b64encode(_f.read()).decode()
+    _logo_inline = f'<img src="data:image/jpeg;base64,{_logo_b64}" alt="LOCATES">'
+except Exception:
+    _logo_inline = "<em>LOCATES</em>"
+
+_dl_icon_path = os.path.join(os.path.dirname(__file__), "download.png")
+try:
+    with open(_dl_icon_path, "rb") as _f:
+        _dl_icon_b64 = base64.b64encode(_f.read()).decode()
+except Exception:
+    _dl_icon_b64 = None
+
+# SVG icon from Lucide Icons (download arrow) — replaces PNG for sharper rendering
+_dl_svg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' y1='15' x2='12' y2='3'/%3E%3C/svg%3E"
+
+st.markdown(f"""
+<style>
+[data-testid="stVerticalBlock"]:has(#pdf-btn-anchor) [data-testid="stDownloadButton"] button::before {{
+    content: '';
+    display: inline-block;
+    width: 1.4em;
+    height: 1.4em;
+    background-image: url("{_dl_svg}");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 6px;
+    vertical-align: middle;
+    filter: invert(24%) sepia(47%) saturate(900%) hue-rotate(225deg) brightness(80%);
+}}
+[data-testid="stVerticalBlock"]:has(#pdf-btn-anchor) [data-testid="stDownloadButton"] button:hover::before {{
+    filter: brightness(0) invert(1);
+}}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown(f"""
 <div class="loc-header">
     <h1 class="loc-title">Índice <em>LOCATES</em></h1>
-    <p class="loc-subtitle">
-        Inteligência de dados e monitorização estratégica do mercado imobiliário em Santa Catarina.
-    </p>
 </div>
 """, unsafe_allow_html=True)
 
-col_ref, col_pdf = st.columns([3, 1])
-with col_ref:
+col_l, col_c, col_r = st.columns([1, 2, 1])
+with col_l:
+    pass  # left spacer
+with col_c:
+    st.markdown('<div id="ref-selector-anchor"></div>', unsafe_allow_html=True)
     ref_date = st.selectbox("Referência", MESES_REF, label_visibility="collapsed")
-with col_pdf:
-    pdf_placeholder = st.empty()
+with col_r:
+    pass  # right spacer
 
-st.markdown(f'<div style="text-align:center"><span class="loc-ref">📅 {ref_date}</span></div>', unsafe_allow_html=True)
+st.markdown("""
+<div style="text-align:center">
+<p class="loc-subtitle">Inteligência de dados e monitorização estratégica do mercado imobiliário em Santa Catarina.</p>
+</div>
+""", unsafe_allow_html=True)
+
+_, col_pdf_c, _ = st.columns([3, 2, 3])
+with col_pdf_c:
+    st.markdown('<div id="pdf-btn-anchor"></div>', unsafe_allow_html=True)
+    pdf_placeholder = st.empty()
 
 # Carregar dados do banco para a data selecionada
 sel_date = _date_from_label(ref_date)
@@ -969,18 +1331,19 @@ st.markdown(f"""
         <div class="kpi-label">Cidades Monitoradas</div>
     </div>
     <div class="kpi">
+        <div class="kpi-val">{n_bairros}</div>
+        <div class="kpi-label">Bairros Monitorados</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-val">{anuncios_label}</div>
+        <div class="kpi-label">Dados Processados</div>
+    </div>
+    <div class="kpi">
         <div class="kpi-val">{fmt_brl(mediana_sc)}</div>
         <div class="kpi-label">Mediana m² SC (Apt/Venda)</div>
         <div class="kpi-delta pos">{'+' if avg_var12 > 0 else ''}{avg_var12:.1f}% em 12m</div>
     </div>
-    <div class="kpi">
-        <div class="kpi-val">{n_bairros}</div>
-        <div class="kpi-label">Bairros Analisados</div>
-    </div>
-    <div class="kpi">
-        <div class="kpi-val">{anuncios_label}</div>
-        <div class="kpi-label">Anúncios Processados</div>
-    </div>
+
 </div>
 """, unsafe_allow_html=True)
 
@@ -988,6 +1351,43 @@ st.markdown(f"""
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TABS
 # ═══════════════════════════════════════════════════════════════════════════════
+
+st.markdown("""
+    <style>
+        .stTabs [data-baseweb="tab-list"] {
+            justify-content: center;
+            border-bottom: none !important;
+
+        }
+            
+        .stTabs [data-baseweb="tab"] {
+            border-bottom: none !important;
+        }
+
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <style>
+        .stTabs [data-baseweb="tab-list"] {
+            justify-content: center;
+            border-bottom: none !important;
+        }
+            
+        .stTabs [data-baseweb="tab"] {
+            border-bottom: none !important;
+        }
+
+        /* Remove a barra de seleção da tab ativa */
+        .stTabs [data-baseweb="tab-highlight"] {
+            display: none !important;
+        }
+
+    </style>
+""", unsafe_allow_html=True)
+
+
+
 tab_cidades, tab_bairros_tab = st.tabs([
     "  Índice Locates Cidade  ",
     "  Índice Locates Bairros  ",
@@ -1000,112 +1400,160 @@ tab_cidades, tab_bairros_tab = st.tabs([
 with tab_cidades:
 
     # ── Ranking ──
-    st.markdown(f"""
-    <div class="sec-card purple-top">
+    with st.container():
+        st.markdown(f"""
+        <div id="sec-ranking-c"></div>
         <div class="sec-header">Ranking Comparativo do m² das Cidades</div>
         <div class="sec-sub">Base de dados atualizada · Ref: {ref_date}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 1])
-    with fc1:
-        tip_c = st.selectbox("Tipo Imóvel", ["Apartamento", "Casa", "Todos"], key="tip_c")
-    with fc2:
-        neg_c = st.selectbox("Negócio", ["Venda", "Aluguel"], key="neg_c")
-    with fc3:
-        dorms_c = st.selectbox("Dormitórios", ["Todas", "1", "2", "3", "4"], key="dorms_c")
-    with fc4:
-        top_n_c = st.selectbox("Top N", [10, 15, 20, "Todos"], key="topn_c")
-
-    agg_c = aggregate(df_cidades, "cidade", neg_c, tip_c, dorms_c)
-
-    if agg_c.empty:
-        st.info("Sem dados para os filtros selecionados.")
-    else:
-        n = len(agg_c) if top_n_c == "Todos" else int(top_n_c)
-        fig_rank_c = chart_ranking(agg_c, top_n=n)
-        st.plotly_chart(fig_rank_c, width="stretch")
-
-        # ── Tabela ──
-        label_c = f"{tip_c} | {neg_c} | {'Todas Tipologias' if dorms_c == 'Todas' else dorms_c + ' Qto(s)'}"
-        st.markdown(f"""
-        <div class="tbl-header">
-            <span class="tbl-title">📊 Valorização Anual</span>
-            <span class="tbl-pill">{label_c}</span>
-        </div>
         """, unsafe_allow_html=True)
 
-        display_c = agg_c.head(n).copy()
-        display_c.insert(0, "rank", [f"{i+1}º" for i in range(len(display_c))])
-        display_c = display_c.rename(columns={
-            "name": "Cidade", "vm2": "Mediana m²",
-            "v3": "3 Meses", "v6": "6 Meses", "v12": "12 Meses",
-        })
+        with st.container():
+            st.markdown('<div id="filter-box-c"></div>', unsafe_allow_html=True)
+            fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 2])
+            with fc1:
+                tip_c = st.selectbox("Tipo Imóvel", ["Apartamento", "Casa"], key="tip_c", label_visibility="visible")
+            with fc2:
+                neg_c = st.selectbox("Negócio", ["Venda", "Aluguel"], key="neg_c")
+            with fc3:
+                dorms_c = st.selectbox("Dormitórios", ["Todas as tipologias", "1", "2", "3", "4"], key="dorms_c")
+            with fc4:
+                top_n_c = st.selectbox("Top Cidades", ["10º", "15º", "30º", "50º", "Todas"], key="topn_c")
 
-        var_cols_c = ["3 Meses", "6 Meses", "12 Meses"]
-        styled_c = (
-            display_c.style
-            .map(style_var_cell, subset=var_cols_c)
-            .format({
-                "Mediana m²": lambda v: fmt_brl(v) if not pd.isna(v) else "--",
-                "3 Meses": lambda v: fmt_var(v),
-                "6 Meses": lambda v: fmt_var(v),
-                "12 Meses": lambda v: fmt_var(v),
-            })
-        )
-        st.dataframe(
-            styled_c,
-            width="stretch",
-            hide_index=True,
-            height=min(600, 45 * len(display_c) + 40),
-            column_config={
-                "rank": st.column_config.TextColumn("Rank", width="small"),
-                "Cidade": st.column_config.TextColumn("Cidade", width="medium"),
-            },
-        )
+        agg_c = aggregate(df_cidades, "cidade", neg_c, tip_c, dorms_c)
 
+        if agg_c.empty:
+            st.info("Sem dados para os filtros selecionados.")
+        else:
+            n = len(agg_c) if top_n_c == "Todas" else int(top_n_c.replace("º", ""))
+            fig_rank_c = chart_ranking(agg_c, top_n=n)
+            st.plotly_chart(fig_rank_c, use_container_width=True)
+
+    if 'agg_c' in dir() and not agg_c.empty:
+        # ── Valorização Anual ──
+        with st.container():
+            label_c = f"{tip_c} | {neg_c} | {'Todas Tipologias' if dorms_c == 'Todas as tipologias' else dorms_c + ' Qto(s)'}"
+            st.markdown(f"""
+            <div id="sec-val-c"></div>
+            <div class="sec-header">Valorização Anual</div>
+            <div class="sec-sub">{label_c}</div>
+            """, unsafe_allow_html=True)
+
+            display_c = agg_c.head(n).reset_index(drop=True)
+            table_html_c = render_html_table(display_c, "Cidade")
+            st.markdown(table_html_c, unsafe_allow_html=True)
         # ── Mapa de Calor ──
-        st.markdown("""
-        <div class="sec-card purple-bot" style="margin-top:1.5rem">
+        with st.container():
+            st.markdown("""
+            <div id="sec-mapa-c"></div>
             <div class="sec-header">Mapa de Variação do m² por Cidade</div>
             <div class="sec-sub">Visualização geográfica da variação percentual</div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
+            # ── Pill selector para período ──
+            st.markdown('<div id="map-period-anchor"></div>', unsafe_allow_html=True)
+            mc1, mc2 = st.columns([3, 1])
+            with mc1:
+                periodo_map = st.radio(
+                    "Período",
+                    ["3 Meses", "6 Meses", "12 Meses"],
+                    horizontal=True,
+                    key="periodo_mapa",
+                    label_visibility="collapsed",
+                )
+            var_col_map = {"3 Meses": "v3", "6 Meses": "v6", "12 Meses": "v12"}[periodo_map]
 
-        periodo_map = st.radio(
-            "Período de variação",
-            ["3 Meses", "6 Meses", "12 Meses"],
-            horizontal=True,
-            key="periodo_mapa",
-        )
-        var_col_map = {"3 Meses": "v3", "6 Meses": "v6", "12 Meses": "v12"}[periodo_map]
+            with mc2:
+                cidade_destaque = st.selectbox(
+                    "Destacar cidade",
+                    ["Todas"] + agg_c["name"].tolist(),
+                    key="cidade_destaque_map",
+                )
 
-        fig_map = chart_map_variation(agg_c, var_col_map, periodo_map)
-        st.plotly_chart(fig_map, use_container_width=True)
+            # Badge de contagem por faixa
+            counts = _count_per_range(agg_c, var_col_map)
+            st.markdown(f"""
+            <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+                <span style="font-size:0.6rem;font-weight:800;color:#dc2626;background:rgba(239,68,68,0.12);padding:3px 12px;border-radius:999px">&#9660; Negativa: {counts['neg']}</span>
+                <span style="font-size:0.6rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.12);padding:3px 12px;border-radius:999px">0–5%: {counts['low']}</span>
+                <span style="font-size:0.6rem;font-weight:800;color:#a16207;background:rgba(234,179,8,0.15);padding:3px 12px;border-radius:999px">5–10%: {counts['mid']}</span>
+                <span style="font-size:0.6rem;font-weight:800;color:#16a34a;background:rgba(43,185,106,0.12);padding:3px 12px;border-radius:999px">&#9650; >10%: {counts['high']}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Filtrar se cidade selecionada
+            map_data = agg_c if cidade_destaque == "Todas" else agg_c[agg_c["name"] == cidade_destaque]
+
+            fig_map = chart_map_variation(agg_c, var_col_map, periodo_map)
+
+            # Se cidade destacada, adicionar marcador
+            if cidade_destaque != "Todas":
+                highlighted = agg_c[agg_c["name"] == cidade_destaque]
+                if not highlighted.empty:
+                    row_h = highlighted.iloc[0]
+                    geojson_sc, name_to_code = _load_ibge_sc()
+                    # Coordenadas aproximadas das cidades de SC
+                    city_coords = {
+                        "Florianópolis": (-27.5954, -48.5480),
+                        "São José": (-27.6136, -48.6356),
+                        "Balneário Camboriú": (-26.9906, -48.6348),
+                        "Itapema": (-27.0903, -48.6114),
+                        "Itajaí": (-26.9078, -48.6616),
+                        "Joinville": (-26.3045, -48.8487),
+                        "Palhoça": (-27.6453, -48.6686),
+                        "Blumenau": (-26.9194, -49.0661),
+                        "Criciúma": (-28.6775, -49.3697),
+                        "Chapecó": (-27.1006, -52.6158),
+                        "Lages": (-27.8161, -50.3261),
+                        "Jaraguá do Sul": (-26.4843, -49.0728),
+                        "Brusque": (-27.0979, -48.9168),
+                        "Tubarão": (-28.4669, -49.0068),
+                        "Navegantes": (-26.8988, -48.6544),
+                        "Camboriú": (-27.0254, -48.6544),
+                        "Gaspar": (-26.9316, -49.1157),
+                        "Biguaçu": (-27.4943, -48.6558),
+                        "Tijucas": (-27.2414, -48.6311),
+                        "Porto Belo": (-27.1547, -48.5544),
+                        "Bombinhas": (-27.1394, -48.5147),
+                        "Piçarras": (-26.7617, -48.6717),
+                        "Penha": (-26.7678, -48.6456),
+                    }
+                    if cidade_destaque in city_coords:
+                        lat, lon = city_coords[cidade_destaque]
+                        fig_map.add_trace(go.Scattermap(
+                            lat=[lat], lon=[lon],
+                            mode="markers+text",
+                            marker=dict(size=14, color="#4F3C88", symbol="circle"),
+                            text=[cidade_destaque],
+                            textposition="top center",
+                            textfont=dict(family="Montserrat", size=12, color="#4F3C88", weight=800),
+                            showlegend=False,
+                            hoverinfo="skip",
+                        ))
+
+            st.plotly_chart(fig_map, use_container_width=True)
 
         # ── Histórico ──
-        st.markdown(f"""
-        <div class="sec-card green-top" style="margin-top:1.5rem">
+        with st.container():
+            st.markdown(f"""
+            <div id="sec-hist-c"></div>
             <div class="sec-header">Evolução Histórica do m²</div>
             <div class="sec-sub">Últimos 12 meses · Valores de {neg_c}</div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-        cities_avail = agg_c["name"].tolist()
-        default_sel = cities_avail[:3]
-        sel_cities = st.multiselect(
-            "Cidades no gráfico",
-            cities_avail,
-            default=default_sel,
-            key="hist_c",
-            placeholder="Selecione as cidades"
-        )
-        if sel_cities:
-            fig_hist_c = chart_history(
-                sel_cities, df_hist_cidades, neg_c, tip_c, dorms_c, group_col="cidade",
+            cities_avail = agg_c["name"].tolist()
+            default_sel = cities_avail[:3]
+            sel_cities = st.multiselect(
+                "Cidades no gráfico",
+                cities_avail,
+                default=default_sel,
+                key="hist_c",
+                placeholder="Selecione as cidades"
             )
-            st.plotly_chart(fig_hist_c, width="stretch")
+            if sel_cities:
+                fig_hist_c = chart_history(
+                    sel_cities, df_hist_cidades, neg_c, tip_c, dorms_c, group_col="cidade",
+                )
+                st.plotly_chart(fig_hist_c, use_container_width=True)
 
 
 # ─────────────────────────────────────────────────
@@ -1113,98 +1561,73 @@ with tab_cidades:
 # ─────────────────────────────────────────────────
 with tab_bairros_tab:
 
-    st.markdown(f"""
-    <div class="sec-card purple-top">
+    with st.container():
+        st.markdown(f"""
+        <div id="sec-ranking-b"></div>
         <div class="sec-header">Ranking Comparativo do m² dos Bairros</div>
         <div class="sec-sub">Base de dados atualizada · Ref: {ref_date}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    fb1, fb2, fb3, fb4, fb5 = st.columns([2, 2, 2, 2, 1])
-    with fb1:
-        cidade_sel = st.selectbox("Cidade", CIDADES_COM_BAIRROS, key="cidade_b")
-    with fb2:
-        tip_b = st.selectbox("Tipo Imóvel", ["Apartamento", "Casa", "Todos"], key="tip_b")
-    with fb3:
-        neg_b = st.selectbox("Negócio", ["Venda", "Aluguel"], key="neg_b")
-    with fb4:
-        dorms_b = st.selectbox("Dormitórios", ["Todas", "1", "2", "3", "4"], key="dorms_b")
-    with fb5:
-        top_n_b = st.selectbox("Top N", [10, 15, "Todos"], key="topn_b")
-
-    sub_bairros = df_bairros[df_bairros["cidade"] == cidade_sel]
-    agg_b = aggregate(sub_bairros, "bairro", neg_b, tip_b, dorms_b)
-
-    if agg_b.empty:
-        st.info("Sem dados para os filtros selecionados.")
-    else:
-        nb = len(agg_b) if top_n_b == "Todos" else int(top_n_b)
-        fig_rank_b = chart_ranking(agg_b, top_n=nb)
-        st.plotly_chart(fig_rank_b, width="stretch")
-
-        # ── Tabela bairros ──
-        label_b = f"{cidade_sel} | {tip_b} | {neg_b} | {'Todas Tipologias' if dorms_b == 'Todas' else dorms_b + ' Qto(s)'}"
-        st.markdown(f"""
-        <div class="tbl-header">
-            <span class="tbl-title">📊 Valorização Anual</span>
-            <span class="tbl-pill">{label_b}</span>
-        </div>
         """, unsafe_allow_html=True)
 
-        display_b = agg_b.head(nb).copy()
-        display_b.insert(0, "rank", [f"{i+1}º" for i in range(len(display_b))])
-        display_b = display_b.rename(columns={
-            "name": "Bairro", "vm2": "Mediana m²",
-            "v3": "3 Meses", "v6": "6 Meses", "v12": "12 Meses",
-        })
+        with st.container():
+            st.markdown('<div id="filter-box-b"></div>', unsafe_allow_html=True)
+            fb1, fb2, fb3, fb4, fb5 = st.columns([2, 2, 2, 2, 2])
+            with fb1:
+                cidade_sel = st.selectbox("Cidade", CIDADES_COM_BAIRROS, key="cidade_b")
+            with fb2:
+                tip_b = st.selectbox("Tipo Imóvel", ["Apartamento", "Casa"], key="tip_b")
+            with fb3:
+                neg_b = st.selectbox("Negócio", ["Venda", "Aluguel"], key="neg_b")
+            with fb4:
+                dorms_b = st.selectbox("Dormitórios", ["Todas as tipologias", "1", "2", "3", "4"], key="dorms_b")
+            with fb5:
+                top_n_b = st.selectbox("Top Bairros", ["10º", "15º", "30º", "50º", "Todos"], key="topn_b")
 
-        var_cols_b = ["3 Meses", "6 Meses", "12 Meses"]
-        styled_b = (
-            display_b.style
-            .map(style_var_cell, subset=var_cols_b)
-            .format({
-                "Mediana m²": lambda v: fmt_brl(v) if not pd.isna(v) else "--",
-                "3 Meses": lambda v: fmt_var(v),
-                "6 Meses": lambda v: fmt_var(v),
-                "12 Meses": lambda v: fmt_var(v),
-            })
-        )
-        st.dataframe(
-            styled_b,
-            width="stretch",
-            hide_index=True,
-            height=min(600, 45 * len(display_b) + 40),
-            column_config={
-                "rank": st.column_config.TextColumn("Rank", width="small"),
-                "Bairro": st.column_config.TextColumn("Bairro", width="medium"),
-            },
-        )
+        sub_bairros = df_bairros[df_bairros["cidade"] == cidade_sel]
+        agg_b = aggregate(sub_bairros, "bairro", neg_b, tip_b, dorms_b)
+
+        if agg_b.empty:
+            st.info("Sem dados para os filtros selecionados.")
+        else:
+            nb = len(agg_b) if top_n_b == "Todos" else int(top_n_b.replace("º", ""))
+            fig_rank_b = chart_ranking(agg_b, top_n=nb)
+            st.plotly_chart(fig_rank_b, use_container_width=True)
+
+    if 'agg_b' in dir() and not agg_b.empty:
+        # ── Valorização Anual bairros ──
+        with st.container():
+            label_b = f"{cidade_sel} | {tip_b} | {neg_b} | {'Todas Tipologias' if dorms_b == 'Todas as tipologias' else dorms_b + ' Qto(s)'}"
+            st.markdown(f"""
+            <div id="sec-val-b"></div>
+            <div class="sec-header">Valorização Anual</div>
+            <div class="sec-sub">{label_b}</div>
+            """, unsafe_allow_html=True)
+
+            display_b = agg_b.head(nb).reset_index(drop=True)
+            table_html_b = render_html_table(display_b, "Bairro")
+            st.markdown(table_html_b, unsafe_allow_html=True)
 
         # ── Histórico bairros ──
-        st.markdown(f"""
-        <div class="sec-card green-top" style="margin-top:1.5rem">
+        with st.container():
+            st.markdown(f"""
+            <div id="sec-hist-b"></div>
             <div class="sec-header">Evolução Histórica do m²</div>
             <div class="sec-sub">Últimos 12 meses · Bairros de {cidade_sel}</div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-        bairros_avail = agg_b["name"].tolist()
-        default_sel_b = bairros_avail[:3]
-        sel_bairros = st.multiselect(
-            "Bairros no gráfico",
-            bairros_avail,
-            default=default_sel_b,
-            key="hist_b",
-        )
-        if sel_bairros:
-            # Para bairros, usar fallback de histórico sintético se não houver dados históricos reais
-            if _bairros_source == "banco":
-                # TODO: carregar histórico de bairros do banco quando disponível
-                pass
-            else:
-                # Histórico sintético para bairros (fallback)
-                fig_hist_b = _chart_history_fallback(agg_b, sel_bairros)
-                st.plotly_chart(fig_hist_b, width="stretch")
+            bairros_avail = agg_b["name"].tolist()
+            default_sel_b = bairros_avail[:3]
+            sel_bairros = st.multiselect(
+                "Bairros no gráfico",
+                bairros_avail,
+                default=default_sel_b,
+                key="hist_b",
+            )
+            if sel_bairros:
+                if _bairros_source == "banco":
+                    pass  # TODO: histórico de bairros do banco
+                else:
+                    fig_hist_b = _chart_history_fallback(agg_b, sel_bairros)
+                    st.plotly_chart(fig_hist_b, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1227,11 +1650,12 @@ pdf_html = build_pdf_html(
 
 with pdf_placeholder:
     st.download_button(
-        label="📄 Exportar Relatório",
+        label="Exportar PDF",
         data=pdf_html.encode("utf-8"),
         file_name=f"Indice_LOCATES_{ref_date.replace(' ', '_')}.html",
         mime="text/html",
         help="Abra o HTML no navegador e use Ctrl+P para salvar como PDF",
+        use_container_width=True,
     )
 
 

@@ -3,3 +3,9 @@ __pycache__/
 
 # Virtual environment
 .venv/
+
+# Environment variables
+indice_locates/.env
+
+# macOS
+.DS_Store
