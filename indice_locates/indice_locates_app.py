@@ -18,9 +18,6 @@ import psycopg
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # ─── PAGE CONFIG ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -346,6 +343,32 @@ div[data-testid="stTabs"] [data-testid="stTabContent"] {
 [data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-c),
 [data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-b) {
     border-top: 8px solid #e0dde8 !important;
+}
+
+/* ── Toggle pills for hist section ── */
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-c) [data-testid="stPills"] > label,
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-b) [data-testid="stPills"] > label {
+    display: none !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-c) [data-testid="stPills"] button,
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-b) [data-testid="stPills"] button {
+    border-radius: 999px !important;
+    padding: 6px 18px !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    font-family: 'Montserrat', sans-serif !important;
+    letter-spacing: 0.04em !important;
+    border: 1.5px solid var(--purple) !important;
+    color: var(--purple) !important;
+    background: transparent !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+}
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-c) [data-testid="stPills"] button[aria-selected="true"],
+[data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-hist-b) [data-testid="stPills"] button[aria-selected="true"] {
+    background: var(--purple) !important;
+    color: #fff !important;
+    border-color: var(--purple) !important;
 }
 [data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-val-c),
 [data-testid="stVerticalBlock"]:has(> [data-testid="stElementContainer"] #sec-val-b) {
@@ -837,7 +860,7 @@ def _var_css_class(val) -> str:
 def render_html_table(df: pd.DataFrame, name_col: str) -> str:
     """Gera HTML de tabela estilizada a partir do dataframe agregado."""
     headers = f"""<thead><tr>
-        <th>#</th><th>{name_col}</th><th>Mediana m²</th>
+        <th>#</th><th>{name_col}</th><th>Valor m²</th>
         <th>3 Meses</th><th>6 Meses</th><th>12 Meses</th>
     </tr></thead>"""
 
@@ -983,7 +1006,7 @@ def chart_map_variation(data: pd.DataFrame, var_col: str, period_label: str) -> 
             "codarea": False,
         },
         labels={
-            "_vm2_fmt": "Mediana m²",
+            "_vm2_fmt": "Valor m²",
             "_var_fmt": "Variação",
             "_periodo": "Período",
         },
@@ -1042,18 +1065,25 @@ def chart_history(
         mask &= df_hist["dorms"] == dorms
     sub = df_hist[mask & df_hist[group_col].isin(selected)]
 
+    # Filtrar apenas últimos 12 meses
+    cutoff = pd.Timestamp.now() - pd.DateOffset(months=12)
+    sub = sub[sub["data_tabela"] >= cutoff]
+
     fig = go.Figure()
     for idx, name in enumerate(selected):
         series = sub[sub[group_col] == name].groupby("data_tabela")["vm2"].median().sort_index()
         if series.empty:
             continue
         fig.add_trace(go.Scatter(
-            x=series.index,  # datetime real — garante ordem cronológica
+            x=series.index,
             y=series.values,
-            mode="lines+markers",
+            mode="lines+markers+text",
             name=name,
+            text=[f"R$ {v:,.0f}".replace(",", ".") for v in series.values],
+            textposition="top center",
+            textfont=dict(size=9, weight=600, color=PALETTE[idx % len(PALETTE)]),
             line=dict(color=PALETTE[idx % len(PALETTE)], width=3.5),
-            marker=dict(size=7, color=PALETTE[idx % len(PALETTE)]),
+            marker=dict(size=[7] * (len(series) - 1) + [10], color=PALETTE[idx % len(PALETTE)]),
         ))
     base = {k: v for k, v in PLOT_BASE.items() if k != 'margin'}
     fig.update_layout(
@@ -1104,10 +1134,13 @@ def _chart_history_fallback(data: pd.DataFrame, selected: list[str]) -> go.Figur
         pts[11] = round(row["vm2"])
         fig.add_trace(go.Scatter(
             x=months, y=pts,
-            mode="lines+markers",
+            mode="lines+markers+text",
             name=row["name"],
+            text=[f"R$ {v:,.0f}".replace(",", ".") for v in pts],
+            textposition="top center",
+            textfont=dict(size=9, weight=600, color=PALETTE[idx % len(PALETTE)]),
             line=dict(color=PALETTE[idx % len(PALETTE)], width=3.5),
-            marker=dict(size=7, color=PALETTE[idx % len(PALETTE)]),
+            marker=dict(size=[7] * (len(pts) - 1) + [10], color=PALETTE[idx % len(PALETTE)]),
         ))
     base = {k: v for k, v in PLOT_BASE.items() if k != 'margin'}
     fig.update_layout(
@@ -1180,7 +1213,7 @@ Inteligência de dados e monitorização estratégica do mercado imobiliário em
 <thead><tr>
 <th style="text-align:center;width:50px">Rank</th>
 <th>Cidade</th>
-<th style="text-align:right">Mediana m²</th>
+<th style="text-align:right">Valor m²</th>
 <th style="text-align:center">3 Meses</th>
 <th style="text-align:center">6 Meses</th>
 <th style="text-align:center">12 Meses</th>
@@ -1196,7 +1229,7 @@ Inteligência de dados e monitorização estratégica do mercado imobiliário em
 <thead><tr>
 <th style="text-align:center;width:50px">Rank</th>
 <th>Bairro</th>
-<th style="text-align:right">Mediana m²</th>
+<th style="text-align:right">Valor m²</th>
 <th style="text-align:center">3 Meses</th>
 <th style="text-align:center">6 Meses</th>
 <th style="text-align:center">12 Meses</th>
@@ -1340,7 +1373,7 @@ st.markdown(f"""
     </div>
     <div class="kpi">
         <div class="kpi-val">{fmt_brl(mediana_sc)}</div>
-        <div class="kpi-label">Mediana m² SC (Apt/Venda)</div>
+        <div class="kpi-label">Valor m² SC (Apt/Venda)</div>
         <div class="kpi-delta pos">{'+' if avg_var12 > 0 else ''}{avg_var12:.1f}% em 12m</div>
     </div>
 
@@ -1465,7 +1498,7 @@ with tab_cidades:
             with mc2:
                 cidade_destaque = st.selectbox(
                     "Destacar cidade",
-                    ["Todas"] + agg_c["name"].tolist(),
+                    ["Todas"] + sorted(agg_c["name"].tolist()),
                     key="cidade_destaque_map",
                 )
 
@@ -1540,14 +1573,14 @@ with tab_cidades:
             <div class="sec-sub">Últimos 12 meses · Valores de {neg_c}</div>
             """, unsafe_allow_html=True)
 
-            cities_avail = agg_c["name"].tolist()
-            default_sel = cities_avail[:3]
-            sel_cities = st.multiselect(
+            cities_avail = sorted(agg_c["name"].tolist())
+            default_sel = filter(lambda x: x in ["Florianópolis", "Joinville", "Balneário Camboriú"], cities_avail)
+            sel_cities = st.pills(
                 "Cidades no gráfico",
                 cities_avail,
                 default=default_sel,
+                selection_mode="multi",
                 key="hist_c",
-                placeholder="Selecione as cidades"
             )
             if sel_cities:
                 fig_hist_c = chart_history(
@@ -1614,13 +1647,14 @@ with tab_bairros_tab:
             <div class="sec-sub">Últimos 12 meses · Bairros de {cidade_sel}</div>
             """, unsafe_allow_html=True)
 
-            bairros_avail = agg_b["name"].tolist()
+            bairros_avail = sorted(agg_b["name"].tolist())
             default_sel_b = bairros_avail[:3]
-            sel_bairros = st.multiselect(
+            sel_bairros = st.pills(
                 "Bairros no gráfico",
                 bairros_avail,
                 default=default_sel_b,
-                key="hist_b",
+                selection_mode="multi",
+                key="hist_b"
             )
             if sel_bairros:
                 if _bairros_source == "banco":
@@ -1664,6 +1698,10 @@ with pdf_placeholder:
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="loc-footer">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem">
+        <div style="width:5px;height:28px;background:var(--green);border-radius:4px"></div>
+        <span style="font-size:0.85rem;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:var(--purple)">Notas Metodológicas</span>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2rem">
         <div>
             <h5>Recolha de Dados</h5>
