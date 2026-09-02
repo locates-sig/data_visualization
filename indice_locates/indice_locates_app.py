@@ -18,9 +18,7 @@ import psycopg
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
-from dotenv import load_dotenv
 
-load_dotenv()
 
 # ─── PAGE CONFIG ──────────────────────────────────────────────────────────────
 st.set_page_config(
